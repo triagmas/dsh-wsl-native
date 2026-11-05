@@ -10,7 +10,9 @@ const run = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
 
-const { stdout } = await run('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: root });
+// Windows exposes the npm shim as `npm.cmd`; execFile does not resolve shims.
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const { stdout } = await run(npm, ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: root });
 const [{ files, entryCount, size, unpackedSize }] = JSON.parse(stdout);
 const names = files.map((file) => file.path).sort();
 const problems = [];
