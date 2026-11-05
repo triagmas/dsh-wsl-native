@@ -59,18 +59,31 @@ were **not started**. The instruction to stop immediately on unexpected access t
 the working profile was applied. No screenshots and no application logs exist,
 because the plugin was never installed and the GUI was not driven.
 
-## What the next run needs
+## Fix prepared, not executed
 
-1. Pass the switch as a single token: `--user-data-dir=F:\dsh-test\user-data`
-   (or `Start-Process -ArgumentList '--user-data-dir=F:\dsh-test\user-data'`).
-2. Verify before any further step that `F:\dsh-test\user-data` receives
-   `Local State`, `Preferences` and `Cache\` while `%APPDATA%\@deepseek-ai\dsh-desktop`
-   shows no new files; abort if it does.
-3. Use `ELECTRON_ENABLE_LOGGING=1` with `--enable-logging=file --log-file=<path>`
-   inside the test tree so renderer warnings (the panel's own load) are captured
-   instead of written to the default location.
-4. Quitting needs a GUI action (tray → Quit), so a human step must be planned for
-   both launches, or the tray exit must be automated explicitly.
+The launch scenario was corrected after this incident; see
+`docs/r04-s1-fix-runbook.md` and `scripts/r04/isolation-probe.ps1`.
+
+1. The switch is now one token, `--user-data-dir=F:\dsh-test\user-data`.
+   Chromium's parser accepts only `--switch=value`; the two-token form was the
+   whole cause of this incident.
+2. `APPDATA` is redirected too, because `app.getPath('logs')` does not follow
+   `--user-data-dir` and crash reports would otherwise land in the working
+   `%APPDATA%`. `sessionData` needs nothing: the build never calls `setPath`, so
+   it equals `userData` and follows the switch.
+3. `LOCALAPPDATA` stays redirected: the first run demonstrably wrote
+   `node-addon-native-custom-loader\native-cache` into `F:\dsh-test\localappdata`,
+   and the updater keeps its download cache there. `TEMP`/`TMP` are redirected
+   for the same reason.
+4. Isolation is proven by observation, not by the argument: `launch` waits for
+   `F:\dsh-test\user-data\Preferences`, checks that
+   `F:\dsh-test\appdata\@deepseek-ai\dsh-desktop` and `F:\dsh-test\logs\chromium.log`
+   appear, and compares the working roots against a 3261-entry baseline.
+5. Quitting is Tray → Quit; the script waits for the process to end and never
+   calls `Stop-Process`. `verify` reports `PASS`, `FAIL` or `N/A` (no launch yet).
+
+Status: not executed. A single probe launch is required first, and only a clean
+result allows R04-S1 step 6 (plugin install) to continue.
 
 ## Artifacts
 
