@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { WslService } from "../src/service.mjs";
-import { createController } from "../src/routes.mjs";
-import { connect } from "../src/connector.mjs";
-import { localOrigin, handoffUrl, readHandoff } from "../src/handoff.mjs";
-import { signHandoff, verifyHandoff } from "../src/handoff-auth.mjs";
+import { WslService } from "../../src/service.js";
+import { createController } from "../../src/routes.js";
+import { connect } from "../../src/connector.js";
+import { localOrigin, handoffUrl, readHandoff } from "../../src/handoff.js";
+import { signHandoff, verifyHandoff } from "../../src/handoff-auth.js";
 
 const deferred = () => {
   let resolve;
@@ -75,14 +75,14 @@ async function fixture(t) {
 
 test('auto-start preferences default off and persist without connecting to WSL', async t => {
   const { service, calls, settingsFile, pool } = await fixture(t);
-  assert.deepEqual((await service.status()).preferences, { autoStartWsl: false });
+  assert.deepEqual((await service.status()).preferences, { autoStartWsl: false, locale: "en" });
   const controller = createController(service);
   t.after(() => controller.close());
   await controller.dispatch('preferences', { autoStartWsl: true });
   assert.deepEqual(calls, []);
   const next = new WslService({ settingsFile }, { pool, listDistros: async () => [] });
   t.after(() => next.close());
-  assert.deepEqual((await next.status()).preferences, { autoStartWsl: true });
+  assert.deepEqual((await next.status()).preferences, { autoStartWsl: true, locale: 'en' });
   for (const payload of [{}, { autoStartWsl: 'true' }, { autoStartWsl: true, command: 'anything' }])
     await assert.rejects(service.updatePreferences(payload), { code: 'INVALID_ARGUMENT' });
   assert.deepEqual(calls, []);

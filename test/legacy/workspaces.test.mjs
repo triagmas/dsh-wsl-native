@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { projectWorkspaces, reorderWorkspace, remoteId } from '../src/workspace-projection.mjs';
-import { cleanCatalog } from '../src/conversation-protocol.mjs';
-import { workspaceCommand } from '../src/workspace-commands.mjs';
-import { bindHandoffDraft, createWorkHandoff, recentConversation } from '../src/work-handoff.mjs';
+import { projectWorkspaces, reorderWorkspace, remoteId } from '../../src/workspace-projection.js';
+import { cleanCatalog } from '../../src/conversation-protocol.js';
+import { workspaceCommand } from '../../src/workspace-commands.js';
+import { bindHandoffDraft, createWorkHandoff, recentConversation } from '../../src/work-handoff.js';
 
 const catalog = () => cleanCatalog({ rows: [{ id: 'same', title: '任务', workspaceId: 'same', pinned: true }],
   workspaces: [{ workspaceId: 'same', title: 'Linux 项目', path: '/tmp/a', sessionIds: ['same'] },
@@ -81,7 +81,8 @@ test('draft handoff preserves an existing draft and never calls the model', asyn
   const f = handoffFixture(), deliver = createWorkHandoff(f.ctx, f.storage);
   const payload = { transferId: crypto.randomUUID(), mode: 'draft', sessionId: 'target', text: '待交接内容' };
   f.setDraft('用户未发送内容');
-  await assert.rejects(deliver('handoff.deliver', payload), /已有草稿/);
+  // Localized messages since 0.8.0; the stable error code is the contract.
+  await assert.rejects(deliver('handoff.deliver', payload), { code: 'DRAFT_BUSY' });
   assert.equal(f.drafts.length, 0);
   f.setDraft(''); await deliver('handoff.deliver', payload);
   assert.deepEqual(f.drafts, ['待交接内容']); assert.equal(f.sends.length, 0);
@@ -92,6 +93,6 @@ test('draft handoff protects a persisted draft before its editor is hydrated', a
   const f = handoffFixture(); f.setStored('尚未挂载的原生草稿');
   await assert.rejects(createWorkHandoff(f.ctx, f.storage)('handoff.deliver', {
     transferId: crypto.randomUUID(), mode: 'draft', sessionId: 'target', text: '交接',
-  }), /已有草稿/);
+  }), { code: 'DRAFT_BUSY' });
   assert.equal(f.getStored(), '尚未挂载的原生草稿'); assert.equal(f.drafts.length, 0);
 });

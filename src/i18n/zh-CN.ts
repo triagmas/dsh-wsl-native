@@ -298,6 +298,17 @@ export const zhCN: Record<MessageKey, string> = {
   'client.noDesktopView': '当前 DSH 桌面端没有隔离浏览器接口，请更新 DSH 或使用 Web 入口。',
   'client.pageLoadFailed': 'WSL 页面加载失败，请检查 Linux 实例并重新连接。',
   'client.pageExited': 'WSL 对话页面已退出，后台宿主仍独立运行。请重新连接。',
+  'permissions.denied.uncPath': '不会通过工具修改网络共享：{path}。',
+  'permissions.denied.devicePath': '不会通过工具打开设备路径：{path}。',
+  'permissions.denied.invalidPath': '该路径不是可用的绝对路径：{path}。',
+  'permissions.denied.userSurface': '更改权限需要用户直接操作；此请求不是。',
+  'permissions.ask.unverifiedPath': '当前系统无法验证 {path} 的真实位置，因此写入需要确认。',
+  'permissions.ask.mountedDrive': '{path} 位于挂载的 Windows 磁盘上，Linux 权限在此无效。',
+  'permissions.ask.crossFilesystem': '{path} 与服务的工作区不在同一文件系统。',
+  'permissions.fullAccess.expired': '完全访问在 {hours} 小时后失效，插件已回到受保护模式。',
+  'permissions.fullAccess.clockJump': '系统时间被回拨，完全访问已撤销。',
+  'ui.permissions.expiresAt': '完全访问截止：{time}。',
+  'cli.permissions.ttyRequired': '更改权限模式或授权需要交互式终端，请在终端中自行运行此命令。',
   'cli.help': `DSH for WSL · dsh-wsl-native {version}
 
   dsh-wsl list                               列出发行版

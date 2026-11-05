@@ -14,12 +14,20 @@ export interface HandoffPayload {
   proof?: string;
 }
 
-function payload(value: HandoffPayload): string {
+/**
+ * Normalize a handoff record to the signed field list.
+ *
+ * Callers may pass either the flat shape (`distro`/`user`/`directory` at the
+ * top level) or the launcher record that nests them under `settings`; both
+ * produce the same signature, so signing and verification cannot disagree.
+ */
+function payload(value: HandoffPayload & { settings?: Partial<HandoffPayload> }): string {
+  const settings = value.settings ?? value;
   return JSON.stringify([
     value.id,
-    value.distro,
-    value.user,
-    value.directory,
+    settings.distro,
+    settings.user,
+    settings.directory,
     value.parentOrigin || null,
     value.issuedAt,
   ]);

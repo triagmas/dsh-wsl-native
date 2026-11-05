@@ -1,5 +1,19 @@
 import { connectWorkspace } from './workspace-session.js';
 import { ct } from './i18n/client.js';
+
+/**
+ * Localized client error with a stable machine code, so callers (and tests) can
+ * branch on the code instead of the translated message.
+ */
+function clientError(
+  code: string,
+  key: Parameters<typeof ct>[0],
+  params?: Parameters<typeof ct>[1],
+): Error {
+  const error = new Error(ct(key, params)) as Error & { code: string };
+  error.code = code;
+  return error;
+}
 import type { ClientContext, EnvironmentSettings } from './client-types.js';
 
 /** Writer installed by the mounted native input for one session. */
@@ -162,7 +176,7 @@ export function createWorkHandoff(
     const text = (value: unknown): string => (typeof value === 'string' ? value : '');
     if (action === 'handoff.read') {
       const sessionId = text(payload.sessionId);
-      if (!ctx.sessions.list.getSnapshot().byId[sessionId]) throw new Error(ct('client.sourceSessionGone'));
+      if (!ctx.sessions.list.getSnapshot().byId[sessionId]) throw clientError('SESSION_GONE', 'client.sourceSessionGone');
       const result = await ctx.sessions.using(sessionId, { source: 'workspaceOperation' }, (reference) => {
         const source = (reference.binding as unknown as { eventSource: { getSnapshot(): { entries: TranscriptEntry[] } } })
           .eventSource;
@@ -174,10 +188,10 @@ export function createWorkHandoff(
     const transferId = text(payload.transferId);
     const mode = payload.mode === 'draft' || payload.mode === 'send' ? payload.mode : undefined;
     if (action !== 'handoff.deliver' || !/^[a-f0-9-]{36}$/.test(transferId) || !mode) {
-      throw new Error(ct('client.invalidHandoff'));
+      throw clientError('INVALID_HANDOFF', 'client.invalidHandoff');
     }
     const body = text(payload.text);
-    if (!body.trim() || body.length > 24000) throw new Error(ct('client.invalidHandoff'));
+    if (!body.trim() || body.length > 24000) throw clientError('INVALID_HANDOFF', 'client.invalidHandoff');
     const key = 'dsh-wsl-native:handoff:' + transferId;
     const existing = inFlight.get(key);
     if (existing) return existing;
@@ -190,7 +204,7 @@ export function createWorkHandoff(
     if (record?.done && record.sessionId && record.mode) {
       return { sessionId: record.sessionId, mode: record.mode };
     }
-    if (record?.pending) throw new Error(ct('client.handoffPending', { session: record.sessionId }));
+    if (record?.pending) throw clientError('HANDOFF_PENDING', 'client.handoffPending', { session: record.sessionId });
     const remember = (value: HandoffRecord): void => {
       record = value;
       try {
@@ -204,20 +218,20 @@ export function createWorkHandoff(
       if (!sessionId) {
         const workspaceId = text(payload.workspaceId);
         if (!ctx.workspaces.list.getSnapshot().items.some((item) => item.workspaceId === workspaceId)) {
-          throw new Error(ct('client.chooseWorkspace'));
+          throw clientError('NO_WORKSPACE', 'client.chooseWorkspace');
         }
         sessionId = await connectWorkspace(ctx, workspaceId);
         remember({ sessionId });
       }
       if (!ctx.sessions.list.getSnapshot().byId[sessionId]) await ctx.sessions.refresh();
       if (ctx.workspaces.list.getSnapshot().archivedSessionIds.includes(sessionId)) {
-        throw new Error(ct('client.unarchiveTarget'));
+        throw clientError('TARGET_ARCHIVED', 'client.unarchiveTarget');
       }
       let failure: Error | undefined;
       await ctx.sessions.using(sessionId, { source: 'workspaceOperation' }, async (reference) => {
         if (mode === 'draft') {
           const conversation = ctx.get('conversation') as { input?: ConversationInput } | undefined;
-          if (!conversation?.input) throw new Error(ct('client.noInputSurface'));
+          if (!conversation?.input) throw clientError('NO_INPUT_SURFACE', 'client.noInputSurface');
           ctx.uiWorkspace.openSession(sessionId as string);
           const writer = await mountedDraft(ctx, sessionId as string);
           const input = conversation.input.for(reference.binding.ctx);
@@ -228,7 +242,7 @@ export function createWorkHandoff(
             snapshot.attachmentIds.length ||
             snapshot.phase !== 'plain'
           ) {
-            throw new Error(ct('client.targetBusy'));
+            throw clientError('DRAFT_BUSY', 'client.targetBusy');
           }
           remember({ sessionId: sessionId as string, mode, pending: true });
           writer.setDraft(body);

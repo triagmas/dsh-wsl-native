@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { handoffUrl, readHandoff } from '../src/handoff.mjs';
-import { signHandoff, verifyHandoff } from '../src/handoff-auth.mjs';
+import { handoffUrl, readHandoff } from '../../src/handoff.js';
+import { signHandoff, verifyHandoff } from '../../src/handoff-auth.js';
 import { embeddedUrl, readEmbed, acceptsMessage, cleanCatalog, conversationKey,
-  conversationRows, catalogOf, CONVERSATION_PROTOCOL } from '../src/conversation-protocol.mjs';
+  conversationRows, catalogOf, CONVERSATION_PROTOCOL } from '../../src/conversation-protocol.js';
 
 test('embedded navigation preserves the signed handoff and never accepts a foreign parent', () => {
   const secret = 'test-key-only';

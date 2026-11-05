@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { once } from "node:events";
-import { waitForLocalhost } from "../src/localhost.mjs";
+import { waitForLocalhost } from "../../src/localhost.js";
 
 test("localhost 先未就绪、稍后返回认证跳转时等待成功", async () => {
   let calls = 0;

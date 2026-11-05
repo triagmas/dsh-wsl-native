@@ -322,6 +322,17 @@ export const ru: Record<MessageKey, string> = {
   'client.noDesktopView': 'В этом DSH для рабочего стола нет изолированного браузера. Обновите DSH или используйте веб-версию.',
   'client.pageLoadFailed': 'Не удалось загрузить страницу WSL; проверьте экземпляр Linux и переподключитесь.',
   'client.pageExited': 'Страница беседы WSL завершилась; фоновый хост продолжает работать. Переподключитесь.',
+  'permissions.denied.uncPath': 'Сетевые ресурсы никогда не изменяются через инструмент: {path}.',
+  'permissions.denied.devicePath': 'Пути устройств никогда не открываются через инструмент: {path}.',
+  'permissions.denied.invalidPath': 'Путь не является пригодным абсолютным путём: {path}.',
+  'permissions.denied.userSurface': 'Изменение прав требует прямого действия пользователя; этот запрос им не является.',
+  'permissions.ask.unverifiedPath': 'Текущая система не может проверить, куда ведёт {path}, поэтому запись требует подтверждения.',
+  'permissions.ask.mountedDrive': '{path} находится на смонтированном диске Windows, где права Linux не действуют.',
+  'permissions.ask.crossFilesystem': '{path} находится в другой файловой системе, чем рабочее пространство.',
+  'permissions.fullAccess.expired': 'Полный доступ истёк через {hours} ч, плагин вернулся в Защищённый режим.',
+  'permissions.fullAccess.clockJump': 'Системные часы были переведены назад, поэтому полный доступ отменён.',
+  'ui.permissions.expiresAt': 'Полный доступ действует до {time}.',
+  'cli.permissions.ttyRequired': 'Изменение режима и разрешений требует интерактивного терминала. Запустите команду самостоятельно в терминале.',
   'cli.help': `DSH для WSL · dsh-wsl-native {version}
 
   dsh-wsl list                               список дистрибутивов

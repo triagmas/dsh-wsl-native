@@ -60,23 +60,28 @@ export function handoffUrl(url: string, handoff: Handoff): string {
 export function readHandoff(hash: string | null | undefined): Handoff | null {
   if (!hash?.startsWith('#dsh-wsl=') || hash.length > 16000) return null;
   try {
-    const parsed = JSON.parse(decodeURIComponent(hash.slice(9))) as Partial<HandoffPayload>;
+    // The hash carries either the whole handoff record (`settings` nested, as
+    // `handoffUrl` writes it) or the flat v0.7.0 shape.
+    const parsed = JSON.parse(decodeURIComponent(hash.slice(9))) as Partial<HandoffPayload> & {
+      settings?: Partial<HandoffPayload>;
+    };
+    const settings = parsed.settings ?? parsed;
     if (
       typeof parsed.id !== 'string' ||
       parsed.id.length > 100 ||
-      typeof parsed.distro !== 'string' ||
-      typeof parsed.user !== 'string' ||
-      typeof parsed.directory !== 'string' ||
-      !parsed.directory.startsWith('/') ||
-      /[\x00-\x1f]/.test(parsed.directory)
+      typeof settings.distro !== 'string' ||
+      typeof settings.user !== 'string' ||
+      typeof settings.directory !== 'string' ||
+      !settings.directory.startsWith('/') ||
+      /[\x00-\x1f]/.test(settings.directory)
     ) {
       return null;
     }
     return {
       id: parsed.id,
-      distro: parsed.distro,
-      user: parsed.user,
-      directory: parsed.directory,
+      distro: settings.distro,
+      user: settings.user,
+      directory: settings.directory,
       parentOrigin: appOrigin(parsed.parentOrigin),
       ...(parsed.proof ? { issuedAt: parsed.issuedAt, proof: parsed.proof } : {}),
     };

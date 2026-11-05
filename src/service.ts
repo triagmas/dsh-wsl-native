@@ -8,12 +8,15 @@ import { linuxPath, distroName, parseWslUnc, type DistroInfo } from './paths.js'
 import { t, detectLocale, resolveLocale, getLocale, setLocale, type Locale, LOCALES } from './i18n/index.js';
 import {
   PermissionPolicy,
+  assertUserSurface,
   defaultSecretRoots,
   defaultSystemRoots,
+  homeSecretRoots,
   type DeniedRoots,
   type GuardEnvironment,
   type PermissionGrant,
   type PermissionState,
+  type PolicyAuthority,
 } from './permissions/index.js';
 import type {
   FileReadResult,
@@ -363,6 +366,7 @@ export class WslService {
       await fs.writeFile(temp, JSON.stringify(payload, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
       aborted(signal);
       await fs.rename(temp, this.settingsFile);
+      this.permissions.markPersisted();
     } finally {
       await fs.unlink(temp).catch(() => {});
     }
@@ -418,32 +422,58 @@ export class WslService {
     return change;
   }
 
-  /** Change the permission mode; the caller must be a verified user surface. */
-  async setPermissionMode(input: { mode: string; confirm?: string }): Promise<PermissionState> {
+  /**
+   * Change the permission mode.
+   *
+   * `authority` must be a token minted by {@link createUserSurfaceAuthority}
+   * from verified evidence (authenticated control route or an interactive
+   * terminal). A plain `userInitiated: true` flag is not evidence and is not
+   * accepted anywhere in this path.
+   */
+  async setPermissionMode(
+    input: { mode: string; confirm?: string; hours?: number },
+    authority: PolicyAuthority,
+  ): Promise<PermissionState> {
     await this.initialized;
-    const state = this.permissions.setMode({
-      mode: input.mode as PermissionState['mode'],
-      userInitiated: true,
-      confirm: input.confirm,
-    });
+    const state = this.permissions.setMode(
+      {
+        mode: input.mode as PermissionState['mode'],
+        confirm: input.confirm,
+        hours: input.hours,
+      },
+      authority,
+    );
     await this.persistPermissionState();
     return state;
   }
 
-  /** Add one standing grant; the caller must be a verified user surface. */
-  async addPermissionGrant(input: unknown): Promise<PermissionGrant> {
+  /** Add one standing grant; requires the same user-surface authority. */
+  async addPermissionGrant(input: unknown, authority: PolicyAuthority): Promise<PermissionGrant> {
     await this.initialized;
+    assertUserSurface(authority);
     const grant = this.permissions.addGrant(input);
     await this.persistPermissionState();
     return grant;
   }
 
-  /** Revoke one standing grant. */
-  async revokePermissionGrant(id: unknown): Promise<{ removed: boolean }> {
+  /** Revoke one standing grant; requires the same user-surface authority. */
+  async revokePermissionGrant(id: unknown, authority: PolicyAuthority): Promise<{ removed: boolean }> {
     await this.initialized;
+    assertUserSurface(authority);
     const removed = this.permissions.revoke(id);
     if (removed) await this.persistPermissionState();
     return { removed };
+  }
+
+  /**
+   * Persist a policy change produced by the clock (expired Full Access window or
+   * expired grants) so a restart cannot resurrect it.
+   */
+  async persistPermissionStateIfNeeded(): Promise<boolean> {
+    await this.initialized;
+    if (!this.permissions.needsPersist) return false;
+    await this.persistPermissionState();
+    return true;
   }
 
   private async persistPermissionState(): Promise<void> {
@@ -454,16 +484,18 @@ export class WslService {
   guardEnvironment(): GuardEnvironment {
     const workspace = this.settings.directory || null;
     const dshHome = process.env.DSH_HOME || path.join(os.homedir(), '.dsh');
-    const home = os.homedir();
     const denied: DeniedRoots = {
       state: [
         path.dirname(this.settingsFile),
         path.join(dshHome, '.credentials.yaml'),
-        ...defaultSecretRoots('wsl', home),
+        // Both HOME and USERPROFILE derived roots are denied, whatever the
+        // caller claims; these are read from the process environment only.
+        ...homeSecretRoots('wsl'),
+        ...homeSecretRoots('windows'),
       ],
       system: [
         ...defaultSystemRoots('wsl'),
-        ...defaultSecretRoots('windows', process.env.USERPROFILE || home),
+        ...defaultSecretRoots('windows', process.env.USERPROFILE || os.homedir()),
         ...defaultSystemRoots('windows'),
       ],
     };

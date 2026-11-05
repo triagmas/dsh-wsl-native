@@ -342,6 +342,17 @@ export const en = {
   'client.noDesktopView': 'This DSH desktop has no isolated browser surface. Update DSH or use the web entry.',
   'client.pageLoadFailed': 'The WSL page failed to load; check the Linux instance and reconnect.',
   'client.pageExited': 'The WSL conversation page exited; the background host keeps running. Reconnect.',
+  'permissions.denied.uncPath': 'Network shares are never modified through a tool: {path}.',
+  'permissions.denied.devicePath': 'Device paths are never opened through a tool: {path}.',
+  'permissions.denied.invalidPath': 'The path is not a usable absolute path: {path}.',
+  'permissions.denied.userSurface': 'Changing permissions requires a direct user action; this request did not come from one.',
+  'permissions.ask.unverifiedPath': 'The current system cannot verify where {path} really points, so this write needs approval.',
+  'permissions.ask.mountedDrive': '{path} is on a Windows drive mounted into Linux, where Linux permissions do not apply.',
+  'permissions.ask.crossFilesystem': '{path} is on a different filesystem than the workspace.',
+  'permissions.fullAccess.expired': 'Full Access expired after {hours} hours and the plugin returned to Protected.',
+  'permissions.fullAccess.clockJump': 'The system clock moved backwards, so Full Access was withdrawn.',
+  'ui.permissions.expiresAt': 'Full Access ends at {time}.',
+  'cli.permissions.ttyRequired': 'Changing permission modes or grants requires an interactive terminal. Run this command yourself in a terminal.',
   'cli.help': `DSH for WSL · dsh-wsl-native {version}
 
   dsh-wsl list                               list distributions

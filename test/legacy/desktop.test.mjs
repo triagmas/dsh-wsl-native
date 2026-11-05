@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { randomUUID } from 'node:crypto';
-import { appOrigin, localOrigin, handoffUrl, readHandoff, DESKTOP_ORIGIN, parentUrl } from '../src/handoff.mjs';
-import { signHandoff, verifyHandoff } from '../src/handoff-auth.mjs';
-import { embeddedUrl, readEmbed } from '../src/conversation-protocol.mjs';
-import { createDesktopMailbox, DESKTOP_MAILBOX } from '../src/desktop-mailbox.mjs';
-import { desktopCallSource, mountDesktopView } from '../src/desktop-view.mjs';
+import { appOrigin, localOrigin, handoffUrl, readHandoff, DESKTOP_ORIGIN, parentUrl } from '../../src/handoff.js';
+import { signHandoff, verifyHandoff } from '../../src/handoff-auth.js';
+import { embeddedUrl, readEmbed } from '../../src/conversation-protocol.js';
+import { createDesktopMailbox, DESKTOP_MAILBOX } from '../../src/desktop-mailbox.js';
+import { desktopCallSource, mountDesktopView } from '../../src/desktop-view.js';
 
 test('Desktop is an exact signed parent but never a network destination', () => {
   const secret = 'test-only', channel = randomUUID();
@@ -98,7 +98,8 @@ test('Desktop view uses an approved isolated lease, retains one page and ends ow
   assert.equal(attrs.get('partition'), 'isolated'); assert.equal(attrs.get('src'), 'about:blank#owned');
   assert.equal(attrs.has('preload'), false); assert.equal(attrs.has('disablewebsecurity'), false);
   box.dispose(); await new Promise(resolve => setImmediate(resolve));
-  assert.equal(errors.length, 1); assert.match(errors[0].message, /通信已关闭/);
+  // Messages are localized since 0.8.0; the English default is the contract here.
+  assert.equal(errors.length, 1); assert.match(errors[0].message, /messaging is closed/);
   element.url = 'https://example.com/'; await assert.rejects(view.request('navigate', { sessionId: 'c' }));
   view.dispose(); await new Promise(resolve => setImmediate(resolve));
   assert.equal(removed, true); assert.deepEqual(releases, ['owned']); assert.equal(errors.length, 1);

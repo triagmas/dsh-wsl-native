@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { FULL_ACCESS_PHRASE, PermissionPolicy, assertNoPolicyArguments, parsePermissionState } from '../src/permissions/index.js';
+import {
+  FULL_ACCESS_PHRASE,
+  PermissionPolicy,
+  assertNoPolicyArguments,
+  createUserSurfaceAuthority,
+  parsePermissionState,
+} from '../src/permissions/index.js';
 import { classifyPath, isInside, type PathGuardContext } from '../src/permissions/paths.js';
 import { BridgeError } from '../src/errors.js';
 
@@ -9,13 +15,19 @@ const denied = {
   system: ['/etc', '/usr', '/boot'],
 };
 
-const environment = (mode: 'protected' | 'trusted' | 'full-access' = 'protected'): PathGuardContext => ({
+/** Authority a test stands in for: an authenticated user surface. */
+const surface = () => createUserSurfaceAuthority({ kind: 'control-route', authenticated: true });
+
+const environment = (
+  mode: 'protected' | 'trusted' | 'full-access' = 'protected',
+  resolvable = true,
+): PathGuardContext => ({
   target: 'wsl',
   mode,
   workspace: '/home/user/project',
   denied,
   roots: [],
-  resolvable: false,
+  resolvable,
 });
 
 test('a fresh policy starts in Protected mode', () => {
@@ -32,7 +44,12 @@ test('an unreadable state file falls back to Protected', () => {
 test('agents cannot switch the mode or widen their own rights', () => {
   const policy = new PermissionPolicy();
   assert.throws(
-    () => policy.setMode({ mode: 'full-access', userInitiated: false, confirm: FULL_ACCESS_PHRASE }),
+    () => policy.setMode({ mode: 'full-access', confirm: FULL_ACCESS_PHRASE }, { surface: 'control-route' }),
+    (error: unknown) => error instanceof BridgeError && error.code === 'PERMISSION_DENIED',
+  );
+  assert.throws(
+    // @ts-expect-error a forged authority object is rejected at runtime.
+    () => policy.setMode({ mode: 'full-access', confirm: FULL_ACCESS_PHRASE }),
     (error: unknown) => error instanceof BridgeError && error.code === 'PERMISSION_DENIED',
   );
   assert.equal(policy.mode, 'protected');
@@ -40,14 +57,14 @@ test('agents cannot switch the mode or widen their own rights', () => {
 
 test('Full Access needs the exact confirmation phrase', () => {
   const policy = new PermissionPolicy();
-  assert.throws(() => policy.setMode({ mode: 'full-access', userInitiated: true, confirm: 'full access' }));
+  assert.throws(() => policy.setMode({ mode: 'full-access', confirm: 'full access' }, surface()));
   assert.equal(policy.mode, 'protected');
-  assert.equal(policy.setMode({ mode: 'full-access', userInitiated: true, confirm: FULL_ACCESS_PHRASE }).mode, 'full-access');
+  assert.equal(policy.setMode({ mode: 'full-access', confirm: FULL_ACCESS_PHRASE }, surface()).mode, 'full-access');
 });
 
 test('tool arguments cannot smuggle policy fields', () => {
   assert.doesNotThrow(() => assertNoPolicyArguments({ command: 'uname -a', target: 'wsl' }));
-  for (const key of ['mode', 'permissionMode', 'grant', 'grants', 'permissions', 'userInitiated', 'confirm']) {
+  for (const key of ['mode', 'permissionMode', 'grant', 'grants', 'permissions', 'userInitiated', 'confirm', 'authority']) {
     assert.throws(() => assertNoPolicyArguments({ command: 'x', [key]: 'full-access' }), BridgeError, key);
   }
 });
@@ -90,6 +107,11 @@ test('workspace content is allowed and unrelated paths need approval', async () 
   assert.equal((await classifyPath('/home/user/other/file.txt', environment('full-access'))).kind, 'allow');
 });
 
+test('an unresolvable path is never auto-approved', async () => {
+  const verdict = await classifyPath('/home/user/project/src/index.ts', environment('protected', false));
+  assert.deepEqual(verdict, { kind: 'outside', code: 'UNVERIFIED_PATH' });
+});
+
 test('relative paths are refused outright', async () => {
   assert.deepEqual(await classifyPath('relative/path', environment()), { kind: 'deny', code: 'INVALID_PATH' });
 });
@@ -111,7 +133,7 @@ test('the default decision is to ask, never to run unapproved', async () => {
 
 test('a matching grant allows the operation while the mode stays Protected', async () => {
   const policy = new PermissionPolicy();
-  policy.setMode({ mode: 'trusted', userInitiated: true });
+  policy.setMode({ mode: 'trusted' }, surface());
   policy.addGrant({ capability: 'write', target: 'wsl', root: '/home/user/project', hours: 2 });
   const decision = await policy.evaluate(
     { capability: 'write', target: 'wsl', path: '/home/user/project/file.txt', workspace: '/home/user/project' },
@@ -122,7 +144,7 @@ test('a matching grant allows the operation while the mode stays Protected', asy
 
 test('a grant never authorizes a denied path', async () => {
   const policy = new PermissionPolicy();
-  policy.setMode({ mode: 'trusted', userInitiated: true });
+  policy.setMode({ mode: 'trusted' }, surface());
   policy.addGrant({ capability: 'write', target: 'wsl', root: '/home/user', hours: 2 });
   const decision = await policy.evaluate(
     { capability: 'write', target: 'wsl', path: '/home/user/.ssh/authorized_keys', workspace: '/home/user/project' },

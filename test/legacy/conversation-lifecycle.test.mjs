@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { createConversations } from '../src/conversation-model.mjs';
-import { createClientModel } from '../src/client-session.mjs';
-import { DESKTOP_MAILBOX } from '../src/desktop-mailbox.mjs';
-import { conversationKey, embeddedUrl } from '../src/conversation-protocol.mjs';
-import { handoffUrl, DESKTOP_ORIGIN } from '../src/handoff.mjs';
-import { signHandoff } from '../src/handoff-auth.mjs';
+import { createConversations } from '../../src/conversation-model.js';
+import { createClientModel } from '../../src/client-session.js';
+import { DESKTOP_MAILBOX } from '../../src/desktop-mailbox.js';
+import { conversationKey, embeddedUrl } from '../../src/conversation-protocol.js';
+import { handoffUrl, DESKTOP_ORIGIN } from '../../src/handoff.js';
+import { signHandoff } from '../../src/handoff-auth.js';
 
 const settings = { distro: 'Ubuntu', user: 'test', directory: '/home/test' };
 const catalog = { phase: 'ready', connected: true, rows: [], workspaces: [] };

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { connectWorkspace, openWorkspace, startSession } from '../src/workspace-session.mjs';
+import { connectWorkspace, openWorkspace, startSession } from '../../src/workspace-session.js';
 
 function fixture(error) {
   const calls = [], navigation = new AbortController();

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeInherited, mergePatchLayers, yaml, yamlText } from '../src/inheritance.mjs';
-import { remoteWorkspaceGroups } from '../src/native-workspaces.mjs';
+import { mergeInherited, mergePatchLayers, yaml, yamlText } from '../../src/inheritance.js';
+import { remoteWorkspaceGroups } from '../../src/native-workspaces.js';
 
 test('首次继承主设置，下一次只更新没有在 Linux 中调整的字段', () => {
   const first = mergeInherited({ theme: 'old', localOnly: true }, { theme: 'system', nested: { a: 1, b: 2 } });

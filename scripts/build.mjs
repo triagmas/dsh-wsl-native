@@ -53,6 +53,10 @@ export async function buildHost() {
     ...nodeOptions,
     entryPoints: ['src/cli.ts'],
     outfile: 'dist/cli.js',
+    // The CLI keeps its runtime dependencies external: the package declares
+    // them, and bundling CJS-only dependencies breaks `require` in an ESM
+    // bundle (which is how `yaml` loads `process`).
+    packages: 'external',
     banner: { js: '#!/usr/bin/env node' },
   });
   await fs.chmod(path.join(root, 'dist/cli.js'), 0o755);

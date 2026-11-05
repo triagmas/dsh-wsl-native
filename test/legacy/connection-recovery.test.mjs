@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createConnectionRecovery } from '../src/connection-recovery.mjs';
+import { createConnectionRecovery } from '../../src/connection-recovery.js';
 
 function fixture(retry) {
   let entry = { key: 'Ubuntu' }, sequence = 0;

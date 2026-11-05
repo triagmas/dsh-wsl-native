@@ -1,11 +1,32 @@
 import { parseArgs } from 'node:util';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { WslService } from './service.js';
 import { NativeLauncher } from './launcher.js';
 import { BridgeError, ensure, errorData, isErrorWithCode } from './errors.js';
 import { isLocale, setLocale, t } from './i18n/index.js';
-import { FULL_ACCESS_PHRASE, PERMISSION_MODES } from './permissions/index.js';
-import type { PermissionGrant, PermissionMode } from './permissions/types.js';
+import {
+  FULL_ACCESS_PHRASE,
+  PERMISSION_MODES,
+  createUserSurfaceAuthority,
+} from './permissions/index.js';
+import type { PermissionGrant, PermissionMode, PolicyAuthority } from './permissions/types.js';
 import type { JobStatusResult } from './worker-protocol.js';
+
+/**
+ * Authority for policy mutations on the command line.
+ *
+ * The CLI is only a user surface when a human is typing into a terminal. A
+ * tool-spawned child process (the agent's `exec`) has no controlling terminal,
+ * so `dsh-wsl permissions` and `dsh-wsl grant` refuse to run there instead of
+ * letting the agent widen its own permissions.
+ */
+function authority(): PolicyAuthority {
+  return createUserSurfaceAuthority({
+    kind: 'interactive-cli',
+    tty: process.stdin.isTTY === true && process.stdout.isTTY === true,
+  });
+}
 
 /** Command-line surface for the plugin, also used for manual verification. */
 const COMMANDS = [
@@ -184,10 +205,10 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
           'errors.forbiddenValue',
           { name: 'mode' },
         );
-        result = await service.setPermissionMode({
-          mode: values.mode,
-          confirm: values.confirm,
-        });
+        result = await service.setPermissionMode(
+          { mode: values.mode, confirm: values.confirm },
+          authority(),
+        );
       } else {
         result = service.permissions.snapshot();
       }
@@ -210,15 +231,18 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     } else if (command === 'grant' || command === 'revoke') {
       if (command === 'revoke') {
         ensure(typeof values.id === 'string', 'INVALID_ARGUMENT', 'errors.forbiddenValue', { name: 'id' });
-        result = await service.revokePermissionGrant(values.id);
+        result = await service.revokePermissionGrant(values.id, authority());
       } else {
         const hours = values.hours === undefined ? undefined : Number(values.hours);
-        const grant = await service.addPermissionGrant({
-          capability: values.capability,
-          target: values.target,
-          root: values.root,
-          hours,
-        });
+        const grant = await service.addPermissionGrant(
+          {
+            capability: values.capability,
+            target: values.target,
+            root: values.root,
+            hours,
+          },
+          authority(),
+        );
         result = grant;
         if (!values.json) {
           console.log(t('cli.grantAdded', { id: grant.id }));
@@ -251,3 +275,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
 export const FULL_ACCESS_CONFIRMATION = FULL_ACCESS_PHRASE;
 
 export { BridgeError };
+
+// Only run when executed directly (`dsh-wsl`, `node dist/cli.js`); tests import
+// `main` and must not start a process-level parse.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  await main();
+}

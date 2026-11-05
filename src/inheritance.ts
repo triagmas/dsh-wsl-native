@@ -116,8 +116,16 @@ export function parseInheritableYaml<T>(text: string | null | undefined, fallbac
 }
 
 /** Serialize inheritable YAML, preserving expression tags. */
+/**
+ * v0.7.0 names for the YAML helpers. The public surface is kept identical so
+ * existing callers and the upstream regression tests keep working.
+ */
 export const inheritableYamlText = (value: unknown): string =>
   stringify(value, { customTags: tags, lineWidth: 0 });
+
+/** v0.7.0 helper names, kept for API and test compatibility. */
+export const yaml = parseInheritableYaml;
+export const yamlText = inheritableYamlText;
 
 /** Flatten nested plain objects into JSON-path keyed leaves. */
 function flatten(value: unknown, prefix: string[] = [], map = new Map<string, unknown>()): Map<string, unknown> {

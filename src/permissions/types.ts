@@ -36,9 +36,20 @@ export interface PermissionGrant {
   expiresAt: number | null;
 }
 
-/** Durable permission state stored with the plugin settings. */
+/**
+ * Durable permission state stored with the plugin settings.
+ *
+ * Full Access is always time-boxed: `modeExpiresAt` and `modeIssuedAt` are
+ * persisted with the mode so a restart cannot extend the window, and a state
+ * file that claims Full Access without a valid window is downgraded to
+ * Protected when it is loaded.
+ */
 export interface PermissionState {
   mode: PermissionMode;
+  /** Epoch millisecond deadline for the active Full Access window. */
+  modeExpiresAt: number | null;
+  /** Epoch millisecond start of the active Full Access window. */
+  modeIssuedAt: number | null;
   grants: PermissionGrant[];
 }
 
@@ -65,7 +76,47 @@ export interface PermissionRequest {
 /** Longest accepted grant lifetime; a grant must not outlive a working session. */
 export const MAX_GRANT_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
-/** Validation result for an untrusted grderant payload. */
+/**
+ * Longest accepted Full Access window. The ceiling applies to the stored
+ * deadline, so lowering the constant also shortens an already running window.
+ */
+export const MAX_MODE_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Wall-clock movement tolerated before the policy assumes the system clock was
+ * changed and drops Full Access. Real clocks drift; supervised sessions do not
+ * jump minutes backwards.
+ */
+export const CLOCK_SKEW_TOLERANCE_MS = 60 * 1000;
+
+/**
+ * Brand proving that a policy mutation came from a human-facing surface.
+ *
+ * `userInitiated: true` is only a claim: anything that can call the policy can
+ * set it. Authority objects instead can only be produced by
+ * `createUserSurfaceAuthority`, which verifies evidence the agent path does not
+ * have (an interactive terminal, or the authenticated control route).
+ */
+export interface PolicyAuthority {
+  /** Which user-facing surface minted this authority. */
+  readonly surface: 'control-route' | 'interactive-cli';
+}
+
+/** Evidence accepted when minting an authority object. */
+export type UserSurfaceEvidence =
+  | { kind: 'control-route'; authenticated: boolean }
+  | { kind: 'interactive-cli'; tty: boolean };
+
+/** Input accepted by a mode change coming from the user surface. */
+export interface ModeChangeInput {
+  mode: PermissionMode;
+  /** Required when entering Full Access; must equal the exact phrase. */
+  confirm?: string;
+  /** Requested window length in hours; clamped to the 24 hour ceiling. */
+  hours?: number;
+}
+
+/** Validation result for an untrusted grant payload. */
 export interface GrantInput {
   capability: Capability;
   target: GrantTarget;

@@ -5,15 +5,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { PassThrough } from 'node:stream';
-import { parseDistros, parseWslUnc, windowsToLinux, toWslUnc, shellQuote } from '../src/paths.mjs';
-import { runProcess } from '../src/process.mjs';
-import { readFrames, MAX_FRAME } from '../src/rpc.mjs';
-import { connect, ConnectionPool } from '../src/connector.mjs';
-import { authorize } from '../src/policy.mjs';
-import { trusted } from '../src/routes.mjs';
-import { apply } from '../src/index.mjs';
-import { decodeChunk } from '../src/encoding.mjs';
-import { matchesPlatform } from '../src/install-cache.mjs';
+import { parseDistros, parseWslUnc, windowsToLinux, toWslUnc, shellQuote } from '../../src/paths.js';
+import { runProcess } from '../../src/process.js';
+import { readFrames, MAX_FRAME } from '../../src/rpc.js';
+import { connect, ConnectionPool } from '../../src/connector.js';
+import { authorize } from '../../src/policy.js';
+import { trusted } from '../../src/routes.js';
+import { apply } from '../../src/index.js';
+import { decodeChunk } from '../../src/encoding.js';
+import { matchesPlatform } from '../../src/install-cache.js';
 
 test('UTF-16 发行版列表支持本地化状态并过滤 Docker', () => {
   const bytes = Buffer.from('  NAME            STATE           VERSION\r\n* Ubuntu          正在运行         2\r\n  Debian          Stopped         2\r\n  docker-desktop  Running         2\r\n', 'utf16le');
@@ -25,9 +25,10 @@ test('盘符、中文、UNC 与发行版边界', () => {
   assert.equal(windowsToLinux('C:\\x', undefined, '/windows'), '/windows/c/x');
   assert.deepEqual(parseWslUnc('\\\\wsl$\\Ubuntu\\home\\a'), { distro: 'Ubuntu', path: '/home/a' });
   assert.equal(toWslUnc('/home/中文', 'Ubuntu'), '\\\\wsl.localhost\\Ubuntu\\home\\中文');
-  assert.throws(() => windowsToLinux('C:relative'), /绝对路径/);
-  assert.throws(() => windowsToLinux('\\\\wsl$\\Debian\\a', 'Ubuntu'), /发行版/);
-  assert.throws(() => toWslUnc('/a:b', 'Ubuntu'), /不能/);
+  // Since 0.8.0 messages are localized, so the contract is the error code.
+  assert.throws(() => windowsToLinux('C:relative'), { code: 'INVALID_PATH' });
+  assert.throws(() => windowsToLinux('\\\\wsl$\\Debian\\a', 'Ubuntu'), { code: 'DISTRO_MISMATCH' });
+  assert.throws(() => toWslUnc('/a:b', 'Ubuntu'), { code: 'UNREPRESENTABLE_PATH' });
   assert.equal(shellQuote("a'$(b)"), "'a'\\''$(b)'");
 });
 test('RPC 分包、粘包与多字节字符', () => {

@@ -21,6 +21,11 @@ export interface ApprovalRequest {
   signal?: AbortSignal;
 }
 
+/** Structural view of DSH's own sandbox policy service. */
+export interface SandboxPolicyService {
+  resolve(input?: unknown): { mode?: string } | undefined;
+}
+
 /** Structural view of `ctx.approval`. */
 export interface ApprovalService {
   request(request: ApprovalRequest): Promise<ApprovalOutcome>;
@@ -75,22 +80,29 @@ export function mergeReason(first: LocalizedReason, second: LocalizedReason): Lo
 export async function authorize(
   ctx: PolicyContext,
   exec: ToolExec,
-  reason: LocalizedReason,
+  reason: LocalizedReason | string,
 ): Promise<void> {
   aborted(exec.signal);
+  const display: LocalizedReason = typeof reason === 'string' ? { en: reason } : reason;
+  // DSH itself can be switched to `danger-full-access` only by the user through
+  // the DSH interface; the agent cannot reach that setting through this plugin.
+  // When it is on, upstream behaviour is to skip the per-call prompt, and this
+  // function keeps that contract instead of inventing a second switch.
+  const sandbox = ctx.get('sandboxPolicy') as SandboxPolicyService | undefined;
+  if (sandbox?.resolve?.({})?.mode === 'danger-full-access') return;
   const approval = ctx.get('approval') as ApprovalService | undefined;
   if (!approval || !exec.agent) {
     throw new BridgeError(
       'CROSS_OS_PERMISSION',
-      t('errors.crossOsPermission', { reason: reason.en }),
+      t('errors.crossOsPermission', { reason: display.en }),
     );
   }
   const outcome = await approval.request({
     agent: exec.agent,
     toolName: exec.name,
     callId: exec.callId,
-    reason: reason.en,
-    displayReason: reason,
+    reason: display.en,
+    displayReason: display,
     signal: exec.signal,
   });
   aborted(exec.signal);
