@@ -124,13 +124,17 @@ function Get-FreshFiles {
 }
 
 function Get-Verdict {
-  param($WorkingDelta, $FreshUserData, $FreshAppData, $FreshLogs, [string]$Quit, [string]$StartedAt)
+  param($WorkingDelta, $FreshUserData, [bool]$AppDataIsolated, $FreshLogs, [string]$Quit, [string]$StartedAt)
   $checks = [ordered]@{}
   $checks['start_time_recorded'] = -not [string]::IsNullOrWhiteSpace($StartedAt)
   $checks['working_roots_unchanged'] = ($WorkingDelta.Added.Count -eq 0 -and $WorkingDelta.Changed.Count -eq 0 -and $WorkingDelta.Removed.Count -eq 0)
   $checks['working_roots_readable'] = ($WorkingDelta.ReadErrors.Count -eq 0)
   $checks['test_userdata_fresh'] = ($FreshUserData.Files.Count -gt 0 -and $FreshUserData.Errors.Count -eq 0)
-  $checks['test_appdata_fresh'] = ($FreshAppData.Files.Count -gt 0 -and $FreshAppData.Errors.Count -eq 0)
+  # app.getPath('logs') resolves under userData on Windows, so a run may never
+  # touch APPDATA at all. The requirement is that APPDATA is not used, which is
+  # proven either by fresh files inside the redirected root or by an untouched
+  # working %APPDATA% (also covered by working_roots_unchanged).
+  $checks['test_appdata_isolated'] = $AppDataIsolated
   $checks['test_logs_fresh'] = ($FreshLogs.Files.Count -gt 0 -and $FreshLogs.Errors.Count -eq 0)
   $checks['quit_graceful'] = ($Quit -eq 'graceful')
   $failing = @($checks.Keys | Where-Object { -not $checks[$_] })
@@ -300,18 +304,22 @@ if ($Phase -eq 'verify') {
   Show-Compare -Delta $workingDelta -Label 'working_roots'
 
   $freshUserData = Get-FreshFiles -Roots @((Join-Path $TestRoot 'user-data')) -Since $startedAt -Before $testBefore
-  $freshAppData = Get-FreshFiles -Roots @((Join-Path $TestRoot 'appdata\@deepseek-ai\dsh-desktop')) -Since $startedAt -Before $testBefore
+  $freshAppData = Get-FreshFiles -Roots @((Join-Path $TestRoot 'appdata')) -Since $startedAt -Before $testBefore
   $freshLogs = Get-FreshFiles -Roots @((Join-Path $TestRoot 'logs')) -Since $startedAt -Before $testBefore
   "fresh_userdata=$($freshUserData.Files.Count) fresh_appdata=$($freshAppData.Files.Count) fresh_logs=$($freshLogs.Files.Count)"
   foreach ($path in $freshUserData.Files) { "  user-data: $path" }
   foreach ($path in $freshAppData.Files) { "  appdata: $path" }
   foreach ($path in $freshLogs.Files) { "  logs: $path" }
+  $workingClean = ($workingDelta.Added.Count -eq 0 -and $workingDelta.Changed.Count -eq 0 -and $workingDelta.Removed.Count -eq 0 -and $workingDelta.ReadErrors.Count -eq 0)
+  $appDataIsolated = ($freshAppData.Files.Count -gt 0 -and $freshAppData.Errors.Count -eq 0) -or ($workingClean -and $freshAppData.Errors.Count -eq 0)
+  "appdata_isolated=$appDataIsolated (fresh=$($freshAppData.Files.Count), working_clean=$workingClean)"
+  "appdata_note=Electron keeps logs under userData on Windows; an empty redirected APPDATA is expected when no crash report is written"
 
   $quit = Read-QuitState -Path (Join-Path $evidence 'quit.txt')
   $stillRunning = @(Get-Process -Name 'DeepSeek Harness' -ErrorAction SilentlyContinue).Count
   "quit_state=$quit running_processes=$stillRunning"
 
-  $verdict = Get-Verdict -WorkingDelta $workingDelta -FreshUserData $freshUserData -FreshAppData $freshAppData -FreshLogs $freshLogs -Quit $quit -StartedAt $startedAt.ToString('o')
+  $verdict = Get-Verdict -WorkingDelta $workingDelta -FreshUserData $freshUserData -AppDataIsolated $appDataIsolated -FreshLogs $freshLogs -Quit $quit -StartedAt $startedAt.ToString('o')
   Show-Verdict -Verdict $verdict -Title 'verify'
   if ($verdict.Ok -and $stillRunning -eq 0) { exit 0 } else { exit 1 }
 }
@@ -351,26 +359,29 @@ if ($Phase -eq 'selftest') {
   $brokenDelta = [pscustomobject]@{ Added = @(); Changed = @(); Removed = @(); ReadErrors = @('denied :: access') }
   $emptyFresh = [pscustomobject]@{ Files = @(); Errors = @() }
   $oneFresh = [pscustomobject]@{ Files = @('x'); Errors = @() }
-  $brokenVerdict = Get-Verdict -WorkingDelta $brokenDelta -FreshUserData $oneFresh -FreshAppData $oneFresh -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
+  $brokenVerdict = Get-Verdict -WorkingDelta $brokenDelta -FreshUserData $oneFresh -AppDataIsolated $true -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
   Check 'read_errors_fail' (-not $brokenVerdict.Ok)
   Check 'read_errors_named' (@($brokenVerdict.Failing) -contains 'working_roots_readable')
 
   # 4. a clean set passes, each missing condition fails
   $cleanDelta = [pscustomobject]@{ Added = @(); Changed = @(); Removed = @(); ReadErrors = @() }
-  $passVerdict = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -FreshAppData $oneFresh -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
+  $passVerdict = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -AppDataIsolated $true -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
   Check 'clean_case_pass' $passVerdict.Ok
-  $noUserData = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $emptyFresh -FreshAppData $oneFresh -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
+  $noUserData = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $emptyFresh -AppDataIsolated $true -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
   Check 'missing_userdata_fail' (-not $noUserData.Ok)
-  $noAppData = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -FreshAppData $emptyFresh -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
-  Check 'missing_appdata_fail' (-not $noAppData.Ok)
-  $noLogs = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -FreshAppData $oneFresh -FreshLogs $emptyFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
+  $appDataIsolated = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -AppDataIsolated $true -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
+  Check 'appdata_isolated_pass' $appDataIsolated.Ok
+  $appDataLeak = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -AppDataIsolated $false -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
+  Check 'appdata_leak_fail' (-not $appDataLeak.Ok)
+  Check 'appdata_leak_named' (@($appDataLeak.Failing) -contains 'test_appdata_isolated')
+  $noLogs = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -AppDataIsolated $true -FreshLogs $emptyFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
   Check 'missing_logs_fail' (-not $noLogs.Ok)
-  $noQuit = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -FreshAppData $oneFresh -FreshLogs $oneFresh -Quit 'timeout' -StartedAt '2026-01-01T00:00:00.0000000Z'
+  $noQuit = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -AppDataIsolated $true -FreshLogs $oneFresh -Quit 'timeout' -StartedAt '2026-01-01T00:00:00.0000000Z'
   Check 'quit_timeout_fail' (-not $noQuit.Ok)
-  $noStart = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -FreshAppData $oneFresh -FreshLogs $oneFresh -Quit 'graceful' -StartedAt ''
+  $noStart = Get-Verdict -WorkingDelta $cleanDelta -FreshUserData $oneFresh -AppDataIsolated $true -FreshLogs $oneFresh -Quit 'graceful' -StartedAt ''
   Check 'missing_start_time_fail' (-not $noStart.Ok)
   $dirtyDelta = [pscustomobject]@{ Added = @('C:\\work\\new.txt'); Changed = @(); Removed = @(); ReadErrors = @() }
-  $dirty = Get-Verdict -WorkingDelta $dirtyDelta -FreshUserData $oneFresh -FreshAppData $oneFresh -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
+  $dirty = Get-Verdict -WorkingDelta $dirtyDelta -FreshUserData $oneFresh -AppDataIsolated $true -FreshLogs $oneFresh -Quit 'graceful' -StartedAt '2026-01-01T00:00:00.0000000Z'
   Check 'working_change_fail' (-not $dirty.Ok)
   Check 'working_change_named' (@($dirty.Failing) -contains 'working_roots_unchanged')
 

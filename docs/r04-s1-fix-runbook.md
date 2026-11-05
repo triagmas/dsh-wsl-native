@@ -11,7 +11,7 @@ observing writes, not by trusting the argument.
 | Path source | Default | Redirect | Evidence |
 | --- | --- | --- | --- |
 | `app.getPath('userData')` | `%APPDATA%\@deepseek-ai\dsh-desktop` | `--user-data-dir=F:\dsh-test\user-data` | Desktop settings, shortcuts, background-close marker, updater `userDataPath` all read it |
-| `app.getPath('logs')` | `%APPDATA%\<name>\logs` (independent of the switch) | `APPDATA=F:\dsh-test\appdata` | `persistCrashReport`, `pruneCrashReports` |
+| `app.getPath('logs')` | `userData\logs` in the shipped build, i.e. `F:\dsh-test\user-data\logs` (it does not follow the switch, but it also does not read `APPDATA`) | `APPDATA=F:\dsh-test\appdata` kept as a guard | `persistCrashReport`, `pruneCrashReports` |
 | `sessionData` | equals `userData` unless overridden; never overridden here | covered by the switch | no `setPath`, no `sessionData` in the build |
 | updater cache | `%LOCALAPPDATA%\@deepseek-aidsh-desktop-updater` | `LOCALAPPDATA=F:\dsh-test\localappdata` | electron-updater `getAppCacheDir()` |
 | native addon cache | `%LOCALAPPDATA%\node-addon-native-custom-loader\native-cache` | same | the first run wrote `native-cache\...` into the test tree, not into the working one |
@@ -59,8 +59,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $probe -Phase verify     # f
    error; an unreadable file is a FAIL, never a silent omission.
 4. `test_userdata_fresh` — files exist under `F:\dsh-test\user-data` that are newer
    than the recorded start time and differ from the pre-launch snapshot.
-5. `test_appdata_fresh` — same for `F:\dsh-test\appdata\@deepseek-ai\dsh-desktop`.
-6. `test_logs_fresh` — same for `F:\dsh-test\logs` (`chromium.log`).
+5. `test_appdata_isolated` — `F:\dsh-test\appdata` holds fresh files, **or** the
+   working roots are untouched while the redirected root stays readable.
+   The second form is required because `app.getPath('logs')` resolves under
+   `userData` on Windows (`F:\dsh-test\user-data\logs`), so a clean run writes no
+   crash report at all; an empty redirected `APPDATA` is the expected outcome,
+   and the leak it guards against is caught by `working_roots_unchanged`.
+6. `test_logs_fresh` — same as gate 4 for `F:\dsh-test\logs` (`chromium.log`).
 7. `quit_graceful` — `evidence\quit.txt` says `graceful`; `timeout` is a FAIL.
 
 A file that existed before the run is never accepted as proof: freshness requires
