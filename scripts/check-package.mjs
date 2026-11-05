@@ -10,9 +10,14 @@ const run = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
 
-// Windows exposes the npm shim as `npm.cmd`; execFile does not resolve shims.
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const { stdout } = await run(npm, ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: root });
+// Run npm through its JavaScript entry point: on Windows `npm` is a `.cmd` shim
+// that `execFile` cannot spawn without a shell. `npm_execpath` is set whenever
+// this script runs from an npm script, which is how CI and `verify` call it.
+const npmCli = process.env.npm_execpath;
+const npmArgs = ['pack', '--dry-run', '--json', '--ignore-scripts'];
+const { stdout } = npmCli
+  ? await run(process.execPath, [npmCli, ...npmArgs], { cwd: root })
+  : await run(process.platform === 'win32' ? 'npm.cmd' : 'npm', npmArgs, { cwd: root, shell: true });
 const [{ files, entryCount, size, unpackedSize }] = JSON.parse(stdout);
 const names = files.map((file) => file.path).sort();
 const problems = [];
