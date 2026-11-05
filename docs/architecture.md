@@ -1,6 +1,6 @@
 # Architecture — official Windows Desktop ↔ native WSL2 Harness
 
-**Scope:** `dsh-wsl-native@0.8.x`. This document describes the existing plugin architecture and intended runtime behavior, not a new Desktop, security Broker or virtual machine. Source-code evidence and actual runtime verification should take precedence over outdated documentation.
+**Scope:** `dsh-wsl-native@0.8.x`. This document describes the **existing** plugin architecture, not a new Desktop, security Broker or virtual machine. **New owner requirement (2026-11-05): [WSL-first default execution](wsl-first.md).** The existing optional dual-host UI does not satisfy this requirement: normal Desktop New Chat should route to native Linux Harness and Linux tools by default, without choosing WSL. Implementing this still requires validating official Desktop integration points; do not claim it is already supported. Source-code and runtime evidence take precedence over outdated docs.
 
 Read [project context](project-context.md), [product specification](product-spec.md) and [decisions](decisions.md) first.
 
