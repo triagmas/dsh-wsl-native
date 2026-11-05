@@ -1,6 +1,6 @@
 # Roadmap — dsh-wsl-native
 
-**Target:** a reliable 0.8.x community plugin connecting the official Windows DeepSeek Harness Desktop to a native WSL2 Harness runtime.
+**Target (owner clarified 2026-11-05):** official Windows DeepSeek Harness Desktop as the UI and **native Linux Harness in existing WSL2 as the default executor of ordinary new chats**, without clicking a separate WSL button each time. See [wsl-first.md](wsl-first.md).
 
 This roadmap is intentionally small. It is not a roadmap for building another Desktop, security product or virtualization setup. See [project context](project-context.md) and [specification](product-spec.md).
 
@@ -18,8 +18,11 @@ This roadmap is intentionally small. It is not a roadmap for building another De
 
 ## Next steps
 
+**Priority correction:** the current dual-host chooser is an integration mechanism, **not** the intended default. WSL-first normal New Chat routing is now a mandatory feature before merge. Existing R04-S1 isolation work remains reusable, but cannot itself establish the product goal.
+
 | Priority | Stage | Work | Exit criteria |
 | --- | --- | --- | --- |
+| 0 | R04-W0 | Audit official Desktop 0.2.1-rc.5 New Chat / prompt / session integration points; implement the smallest supported WSL-first default without silent Windows fallback | Verified behavior matrix and tests: ordinary New Chat, prompt execution, reopening sessions, WSL unavailable; explain any host API limitation rather than claiming impossible interception works |
 | 1 | R04 preparation | Review the [minimal local Desktop test plan](r04-local-test.md) for the existing official installation and Ubuntu; resolve verified prerequisites such as Windows-side Node availability | Correct, executable command/path plan; owner approval required before first run |
 | 2 | R04-S1 | Install a test-profile package and verify the official Desktop loads the plugin UI, locales and permission settings **without agent execution** | Real screenshots/logs and an explicit record of the profile used |
 | 3 | R04-S2 | Exercise native WSL Host, project selection, Linux conversations, terminal and reconnection using dummy data | Real end-to-end results, failures and fixes reported |
@@ -31,6 +34,7 @@ This roadmap is intentionally small. It is not a roadmap for building another De
 
 - [ ] Current PR HEAD reviewed; no unexpected code changes.
 - [ ] `npm run verify` and the complete GitHub Actions matrix pass.
+- [ ] **Normal Desktop New Chat → native WSL agent/tool execution by default**, no manual WSL selection or silent Windows fallback.
 - [ ] Official Desktop/WSL integration performed and evidence recorded; or owner expressly accepts the untested limitation.
 - [ ] Root `README.md`, active `docs/*.md`, `AGENTS.md`, `CHANGELOG.md` and human-readable maintained source comments are in **English**.
 - [ ] No stale upstream release/download links presented as this fork's 0.8.0 release.
