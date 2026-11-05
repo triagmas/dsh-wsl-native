@@ -13,7 +13,7 @@ Working environment that must not change:
 | Installed CLI | `F:\-ToolBox-\DSH\resources\runtime\cli\bin\dsh.cmd` |
 | Owner's Harness home | `F:\-ToolBox-\DSH-Data\home` (`DSH_HOME` in `HKCU\Environment`), 17 third-party plugins |
 | WSL | `Ubuntu`, WSL2, default; node v22.23.2, npm 10.9.8 |
-| Package under test | `dsh-wsl-native-0.8.0.tgz`, SHA-256 `630600964fcbee54141441e192e8cbbca0b0e227fc0ecd8d099cce4e3377d59f` |
+| Package under test | `dsh-wsl-native-0.8.0.tgz` built from the agreed commit; record its SHA-256 at build time and quote it with the result (the package contains this document, so a pinned hash would go stale) |
 
 ## 0. Already verified without changing anything
 
