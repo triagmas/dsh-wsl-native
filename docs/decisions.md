@@ -16,6 +16,7 @@ This file records decisions made for the current `dsh-wsl-native` fork so agents
 | D010 | **Russian owner communication.** | Pi reports and explanations must be Russian regardless of the language of code or documentation. |
 | D011 | **Explicit approval for install/system changes/merge.** | Unit development and documentation are distinct from installing into the working Desktop or merging the Draft PR. |
 | D012 | **GitHub is the source of truth.** | Verify HEAD, branch, tests and actual code before tasks. Use one existing Draft PR unless the owner says otherwise. |
+| D013 | **Owner decision (2026-11-05): WSL-first is the primary product objective.** | Official Windows Desktop is UI; normal New Chat and subsequent agent/tools must default to the full existing Ubuntu WSL2 native Harness. Dual Windows/WSL host selection is not the desired default UX. Do not silently fall back to Windows. See [wsl-first.md](wsl-first.md). |
 
 ## Explicitly undecided
 
