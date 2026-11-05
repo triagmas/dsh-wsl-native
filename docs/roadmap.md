@@ -20,7 +20,7 @@ This roadmap is intentionally small. It is not a roadmap for building another De
 
 | Priority | Stage | Work | Exit criteria |
 | --- | --- | --- | --- |
-| 1 | R04 preparation | Minimal reproducible setup for official Desktop 0.2.1-rc.5 using its existing installation and the user's existing Ubuntu | Verified command/path plan; owner approval required before first run |
+| 1 | R04 preparation | Review the [minimal local Desktop test plan](r04-local-test.md) for the existing official installation and Ubuntu; resolve verified prerequisites such as Windows-side Node availability | Correct, executable command/path plan; owner approval required before first run |
 | 2 | R04-S1 | Install a test-profile package and verify the official Desktop loads the plugin UI, locales and permission settings **without agent execution** | Real screenshots/logs and an explicit record of the profile used |
 | 3 | R04-S2 | Exercise native WSL Host, project selection, Linux conversations, terminal and reconnection using dummy data | Real end-to-end results, failures and fixes reported |
 | 4 | Documentation | Make the canonical repo English, preserve EN/RU/ZH UI and add/retain RU/ZH translated README as desired | Full language inventory resolved; English README, active docs, changelog and agent instructions |
