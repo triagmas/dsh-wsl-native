@@ -37,13 +37,14 @@
 
 ## Next action
 
-A new [R04-D minimal local test plan](r04-local-test.md) has been added for the existing official Desktop and Ubuntu (documentation only; nothing executed). Its read-only diagnostics report `spawn node.exe ENOENT` for a Windows-side bridge check; verify or resolve that prerequisite without inventing new infrastructure. Complete the English-language audit, then obtain the owner's explicit approval before any test-profile Desktop installation or launch. First verify UI loading without model/agent commands; then separately test native WSL functionality with dummy files.
+**Owner's priority clarified on 2026-11-05:** [WSL-first execution](wsl-first.md), not a recurring Windows/WSL chooser. Audit official Desktop's normal New Chat / prompt route and implement the smallest supported change so agent/tool execution defaults to native Linux Harness; no silent Windows fallback. The current v0.8.0 package has not demonstrated this requirement. The R04-S1 test profile/isolation work may be reused for later approved live acceptance. The missing-Windows-Node observation in earlier reports is obsolete: owner confirmed Node.js v24.22.2 and npm 11.19.1 installed. Latest reported R04-S1 Fix.1 is commit `e976122`; do not infer real Desktop integration success from its selftests.
 
 ## Blockers
 
-1. **Real integration evidence missing** (not a dependency on Hyper-V or a new Windows installation).
-2. **English repository language gate not complete** until legacy Chinese text throughout maintained docs/source comments is handled.
-3. **Owner's explicit authorization** still required for any local Desktop launch/install and for merge.
+1. **Normal Desktop New Chat → WSL native execution is not yet implemented or proven.** The optional dual-host UI does not fulfill the owner goal.
+2. **Real integration evidence missing** (not a dependency on Hyper-V or a new Windows installation).
+3. **English repository language gate not complete** until legacy Chinese text throughout maintained docs/source comments is handled.
+4. **Owner's explicit authorization** still required for any local Desktop launch/install and for merge.
 
 ## Scope safeguard
 
