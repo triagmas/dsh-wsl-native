@@ -37,7 +37,7 @@
 
 ## Next action
 
-Finish canonical documentation and the full English-language audit, then prepare a **minimal** test-profile integration sequence using the existing official Desktop and WSL Ubuntu. Only a user-approved stage may launch/install. First test UI loading without model/agent commands; then separately test native WSL functionality with dummy files.
+A new [R04-D minimal local test plan](r04-local-test.md) has been added for the existing official Desktop and Ubuntu (documentation only; nothing executed). Its read-only diagnostics report `spawn node.exe ENOENT` for a Windows-side bridge check; verify or resolve that prerequisite without inventing new infrastructure. Complete the English-language audit, then obtain the owner's explicit approval before any test-profile Desktop installation or launch. First verify UI loading without model/agent commands; then separately test native WSL functionality with dummy files.
 
 ## Blockers
 
