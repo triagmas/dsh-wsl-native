@@ -24,6 +24,8 @@ import { classifyPath, homeSecretRoots, type PathGuardContext } from '../src/per
 import { BridgeError } from '../src/errors.js';
 
 const HOUR = 60 * 60 * 1000;
+/** POSIX-only fixtures: symlinks, mount points and WSL realpath resolution. */
+const posix = process.platform !== 'win32';
 const surface = () => createUserSurfaceAuthority({ kind: 'control-route', authenticated: true });
 const denied = { state: ['/tmp/dsh-wsl-state'], system: ['/etc', '/usr'] };
 
@@ -216,7 +218,7 @@ test('SEC-02 a hand-edited settings file cannot open a Full Access window', () =
 
 // ---------------------------------------------------------------- SEC-03 ----
 
-test('SEC-03 a symlink that leaves the workspace is denied', async () => {
+test('SEC-03 a symlink that leaves the workspace is denied', { skip: !posix }, async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-wsl-paths-'));
   const workspace = path.join(root, 'project');
   const outside = path.join(root, 'outside');
@@ -257,13 +259,13 @@ test('SEC-03 UNC shares and device paths are hard denials', async () => {
   });
 });
 
-test('SEC-03 mounted Windows drives are never auto-approved outside Full Access', async () => {
+test('SEC-03 mounted Windows drives are never auto-approved outside Full Access', { skip: !posix }, async () => {
   const verdict = await classifyPath('/mnt/c/Users/me/file.txt', guard('protected', true, '/mnt/c/Users/me'));
   assert.deepEqual(verdict, { kind: 'outside', code: 'MOUNTED_DRIVE' });
   assert.equal((await classifyPath('/mnt/c/Users/me/file.txt', guard('full-access', true, '/mnt/c/Users/me'))).kind, 'allow');
 });
 
-test('SEC-03 jumping between filesystems needs approval', async () => {
+test('SEC-03 jumping between filesystems needs approval', { skip: !posix }, async () => {
   const verdict = await classifyPath('/home/user/project/file.txt', guard('protected', true, '/mnt/c/work'));
   assert.deepEqual(verdict, { kind: 'outside', code: 'CROSS_FILESYSTEM' });
 });
@@ -275,12 +277,15 @@ test('SEC-03 empty, relative and oversized paths are refused', async () => {
 });
 
 test('SEC-03 a path the host cannot resolve is never auto-approved, even in Full Access', async () => {
+  // The other system's paths: WSL paths from a Windows host and Windows paths
+  // from a Linux host are exactly the case this rule exists for.
+  const foreign =
+    process.platform === 'win32'
+      ? ({ capability: 'write', target: 'wsl', path: '/home/user/file.txt' } as const)
+      : ({ capability: 'write', target: 'windows', path: 'C:\\work\\file.txt' } as const);
   const policy = new PermissionPolicy();
   policy.setMode({ mode: 'full-access', confirm: FULL_ACCESS_PHRASE }, surface());
-  const decision = await policy.evaluate(
-    { capability: 'write', target: 'windows', path: 'C:\\work\\file.txt' },
-    { workspace: null, denied, roots: [] },
-  );
+  const decision = await policy.evaluate(foreign, { workspace: null, denied, roots: [] });
   assert.equal(decision.kind, 'ask', 'unverifiable cross-system write needs approval');
 });
 
@@ -296,11 +301,23 @@ test('SEC-03 grants never authorize a mounted drive without verification', async
 });
 
 test('SEC-03 HOME and USERPROFILE secret roots are derived from the process environment', () => {
-  const wsl = homeSecretRoots('wsl');
-  assert.ok(wsl.every((root) => path.posix.isAbsolute(root)));
-  assert.ok(wsl.length > 0, 'at least one home-derived root is known');
-  const windows = homeSecretRoots('windows');
-  for (const root of windows) assert.ok(path.win32.isAbsolute(root), root);
+  const previous = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+  process.env.HOME = '/home/example';
+  process.env.USERPROFILE = 'C:\\Users\\example';
+  try {
+    const wsl = homeSecretRoots('wsl');
+    assert.ok(wsl.includes('/home/example/.ssh'), wsl.join(','));
+    assert.ok(wsl.includes('/home/example/.dsh'));
+    for (const root of wsl) assert.ok(path.posix.isAbsolute(root), root);
+    const windows = homeSecretRoots('windows');
+    assert.ok(windows.some((root) => root.toLowerCase().startsWith('c:\\users\\example')), windows.join(','));
+    for (const root of windows) assert.ok(path.win32.isAbsolute(root), root);
+  } finally {
+    if (previous.HOME === undefined) delete process.env.HOME;
+    else process.env.HOME = previous.HOME;
+    if (previous.USERPROFILE === undefined) delete process.env.USERPROFILE;
+    else process.env.USERPROFILE = previous.USERPROFILE;
+  }
 });
 
 // --------------------------------------------------------------- helpers ----

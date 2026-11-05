@@ -86,7 +86,27 @@ export async function buildClient() {
   return Buffer.byteLength(wrapped);
 }
 
+/**
+ * Remove build output entries one by one.
+ *
+ * Recursive deletion is deliberately not used anywhere in this repository; the
+ * build only clears the directory it owns (`dist/`), file by file.
+ */
+async function cleanDist(directory = path.join(root, 'dist')) {
+  const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      await cleanDist(target);
+      await fs.rmdir(target).catch(() => {});
+    } else {
+      await fs.unlink(target).catch(() => {});
+    }
+  }
+}
+
 async function main() {
+  await cleanDist();
   await fs.mkdir(path.join(root, 'dist'), { recursive: true });
   await buildHost();
   await buildWorker();

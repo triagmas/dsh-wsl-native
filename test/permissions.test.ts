@@ -15,6 +15,12 @@ const denied = {
   system: ['/etc', '/usr', '/boot'],
 };
 
+/**
+ * POSIX path resolution is exercised where it can actually run: on Windows the
+ * host cannot realpath a WSL path, which is a different (also tested) case.
+ */
+const posix = process.platform !== 'win32';
+
 /** Authority a test stands in for: an authenticated user surface. */
 const surface = () => createUserSurfaceAuthority({ kind: 'control-route', authenticated: true });
 
@@ -90,7 +96,7 @@ test('grants can be revoked and expire', () => {
   assert.deepEqual(expired.grants, []);
 });
 
-test('path classification denies state and system locations', async () => {
+test('path classification denies state and system locations', { skip: !posix }, async () => {
   const state = await classifyPath('/home/user/.dsh/dsh-wsl-native/settings.json', environment());
   assert.deepEqual(state, { kind: 'deny', code: 'STATE_FILE' });
   const system = await classifyPath('/etc/passwd', environment());
@@ -101,7 +107,7 @@ test('path classification denies state and system locations', async () => {
   assert.deepEqual(outside, { kind: 'deny', code: 'SYSTEM_PATH' });
 });
 
-test('workspace content is allowed and unrelated paths need approval', async () => {
+test('workspace content is allowed and unrelated paths need approval', { skip: !posix }, async () => {
   assert.equal((await classifyPath('/home/user/project/src/index.ts', environment())).kind, 'allow');
   assert.equal((await classifyPath('/home/user/other/file.txt', environment())).kind, 'outside');
   assert.equal((await classifyPath('/home/user/other/file.txt', environment('full-access'))).kind, 'allow');
@@ -131,7 +137,7 @@ test('the default decision is to ask, never to run unapproved', async () => {
   assert.equal(decision.kind, 'ask');
 });
 
-test('a matching grant allows the operation while the mode stays Protected', async () => {
+test('a matching grant allows the operation while the mode stays Protected', { skip: !posix }, async () => {
   const policy = new PermissionPolicy();
   policy.setMode({ mode: 'trusted' }, surface());
   policy.addGrant({ capability: 'write', target: 'wsl', root: '/home/user/project', hours: 2 });
