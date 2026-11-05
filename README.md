@@ -109,7 +109,7 @@ Start with the canonical project context:
 - [Roadmap](docs/roadmap.md) — implementation stages and merge checklist.
 - [Current status](docs/status.md) — verified accomplishments and missing acceptance evidence.
 - [Decision log](docs/decisions.md) — choices that agents must not forget.
-- [Documentation and language policy](docs/documentation-policy.md) — English main docs, RU/ZH localizations.
+- [Documentation and language policy](docs/documentation-policy.md) and [translation inventory](docs/translation-inventory.md) — English main docs, RU/ZH localizations, and remaining pre-merge translation work.
 - [Desktop guide](docs/desktop.md), [usage](docs/usage.md), [troubleshooting](docs/troubleshooting.md) and [R04 test plan](docs/r04-isolated-test.md).
 
 Some legacy guides are still awaiting English translation; **English-canonical documentation is a merge gate**, not a claim that translation has already finished.
