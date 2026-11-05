@@ -1,7 +1,9 @@
 # R04 — isolated Desktop integration test (preflight)
 
-Status: **BLOCKED** — do not run until §7 is answered. Nothing in this document has
-been executed: no install, no Desktop launch, no directories created.
+Status: **READY for the isolated run once §7 is answered.** The install-path
+blocker of the first preflight is resolved: it came from reading the wrong
+directory (§0.1). Nothing in this document has been executed: no install, no
+Desktop launch, no directories created.
 
 R04 verifies that `dsh-wsl-native@0.8.0` works inside the official DeepSeek
 Harness Desktop 0.2.1-rc.5 without touching the owner's working environment. It
@@ -17,14 +19,16 @@ guesses in the earlier draft (`DSH_PROFILE_DIR`, `DSH_WSL_HOME`, a separate
 | Item | Verified value | Evidence |
 | --- | --- | --- |
 | Desktop build | `@deepseek-ai/dsh-desktop` 0.2.1-rc.5, Electron 44.7.0, Node 24.21.0 | `app.asar:/package.json`, crash log header, `dsh/desktop-runtime.json` |
-| Install root | `C:\Users\<owner>\AppData\Local\Programs\DeepSeek Harness` | file system; single install on this machine |
+| Install root | **`F:\-ToolBox-\DSH`** | `HKCU\...\Uninstall` entry `InstallLocation`, the Start-menu shortcut, `Uninstall DeepSeek Harness.exe` |
+| Installed CLI | `F:\-ToolBox-\DSH\resources\runtime\cli\bin\dsh.cmd` (sets `ELECTRON_RUN_AS_NODE=1` itself) | the file's own contents, `apps/desktop/README.md` |
+| Stale directory | `C:\Users\<owner>\AppData\Local\Programs\DeepSeek Harness` — **not an installation**, do not use (§0.1) | no registry entry, no uninstaller, 1582 of 1583 unpacked files missing |
 | Harness home | `$DSH_HOME`, else `%USERPROFILE%\.dsh` | `dsh-home-paths`: `DSH_HOME_ENV`, `DSH_HOME_DIR_NAME` |
 | Profiles root | `$DSH_HOME\profiles\<name>` | `dsh-app-boot`: `PROFILES_DIR`, `resolveProfileDir()` |
 | Profile the Desktop boots | **always** `$DSH_HOME\profiles\desktop` | `main.js`: `activeProject = resolveDesktopPaths().profile` |
 | Profile lock | `$DSH_HOME\profiles\desktop\lock` | `resolveDesktopPaths()`, `withFileLock` |
 | `DSH_HOME` reaches the host | yes on Windows; the login-shell environment read returns the inherited environment unchanged on `win32` | `desktopNodeEnvironment()`, `readDesktopLoginShellEnvironment()` |
 | Plugin install target | `profiles\desktop` of the **same** `DSH_HOME` | `dsh plugin --profile <name>` → `resolveProfileDir()` |
-| Supported install CLI | `<install>\resources\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js` run by the Electron binary in Node mode, `manageDesktopProfile: true` | `dsh-desktop-host/lib/cli.js` |
+| Supported install CLI | `<install>\resources\runtime\cli\bin\dsh.cmd`, which runs `<install>\resources\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js` under Electron in Node mode with `manageDesktopProfile: true` | the `.cmd` file, `dsh-desktop-host/lib/cli.js` |
 | pnpm used by that CLI | `<install>\resources\runtime\primary-runtime\dependencies\pnpm\bin\pnpm.mjs` | same file, `runDesktopCli(runtimeDir, supportDir)` |
 | Electron userData | `app.getPath("userData")`; **no `app.setPath` call in the build**, so `--user-data-dir` is honoured | `main.js` |
 | Desktop shell state | `readDesktopSettings(userData)`, `<userData>\desktop\settings.json`, `<userData>\logs`, `<userData>\background-close-confirmed`, shortcut bookkeeping under `<userData>` | `main.js` |
@@ -45,17 +49,37 @@ Consequences that drive the plan:
 4. `dsh plugin` needs the profile lock free, so the Desktop must be fully quit
    (tray → Exit), not merely closed to the tray.
 
-### 0.1 Blocker found during preflight
+### 0.1 Why `resources/runtime` appeared to be missing
 
-`<install>\resources\runtime` **does not exist** on this machine.
-`dir /a` of `resources` lists only `app.asar` and `app.asar.unpacked`, and no
-`pnpm.mjs` / `bin\` / `primary-runtime` exists anywhere in the installation.
+The first preflight inspected `C:\Users\<owner>\AppData\Local\Programs\DeepSeek Harness`
+and concluded that the installation had no runtime. That directory is **not the
+installation**. Verified facts:
 
-The supported install CLI hard-codes
-`<resources>\runtime\primary-runtime\dependencies\pnpm\bin\pnpm.mjs`
-(`runDesktopCli`), so `dsh plugin --profile desktop add …` cannot run as
-installed: it would fail before touching the profile. This is not a plugin
-defect and cannot be worked around inside the plugin. See §7, action 1.
+| Fact | Value |
+| --- | --- |
+| Registry (`HKCU\...\Uninstall`, key `1bf39983-…`) | `InstallLocation = F:\-ToolBox-\DSH`, `DisplayVersion = 0.2.1-rc.5`, uninstaller present there |
+| Start-menu shortcut | `F:\-ToolBox-\DSH\DeepSeek Harness.exe` |
+| Package under test, real install | `resources/runtime/{bin,cli,office-skills,primary-runtime,versions.json}` all present; `versions.json` = node 24.21.0, pnpm 11.28.5; `primary-runtime/runtime.json` = python 3.12.14 + wheel map; `runtime/cli/bin/dsh.cmd` present |
+| Integrity of the packed runtime | `desktop-runtime.json` lists 17187 files; all exist in the asar (13-file SHA-256 spot check: no mismatch); 1583 unpacked entries exist in `app.asar.unpacked` — **1583 of 1583** |
+| Chromium payload next to the exe | `icudtl.dat`, `locales\`, `resources.pak`, `chrome_*_percent.pak`, `snapshot_blob.bin`, `LICENSES.chromium.html`, `app-update.yml`, `default_app.asar`, `tray.ico`, `icon.png`, `elevate.exe` — present |
+| Stale directory on C: | only `DeepSeek Harness.exe`, `resources\app.asar` (same SHA-256 as the F: copy) and one `koffi.node`; **no** `locales`, `icudtl.dat`, `*.pak`, `app-update.yml`, `resources\runtime`, uninstaller, or 1582 of the 1583 unpacked files |
+
+The residue is the documented uninstaller behaviour: it "keeps deleting siblings
+after a locked file; residue never stops uninstallation and is not reported"
+(`apps/desktop/README.md`). The three surviving files are exactly the ones a
+running instance holds open — the exe, the asar and the loaded native module. So
+the stale directory is left over from the pre-F: installation, removed on
+2026-11-04 12:28 while the application was running, and everything else moved to
+`F:\-ToolBox-\DSH`.
+
+Consequences for R04:
+
+- Nothing needs to be repaired or reinstalled. The runtime, pnpm, Chromium
+  payload and update feed exist in the real installation.
+- The stale C: directory must not be used, deleted or "repaired" during R04.
+- The two installations are the same release: both `app.asar` files hash to
+  `e1b6f25fa937da98…`, so the earlier findings about profile layout, userData
+  and `--user-data-dir` still hold.
 
 ## 1. Test tree
 
@@ -114,8 +138,9 @@ One PowerShell window, one session. `DSH_HOME` must be set in the same session
 as every DSH command; a new terminal without it would target the working profile.
 
 ```powershell
-$DSH_EXE = "$env:LOCALAPPDATA\Programs\DeepSeek Harness\DeepSeek Harness.exe"   # resolve BEFORE overriding LOCALAPPDATA
-$DSH_CLI = "$env:LOCALAPPDATA\Programs\DeepSeek Harness\resources\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js"
+$INSTALL = 'F:\-ToolBox-\DSH'                       # verified InstallLocation, never the stale C: copy
+$DSH_EXE = "$INSTALL\DeepSeek Harness.exe"
+$DSH_CLI = "$INSTALL\resources\runtime\cli\bin\dsh.cmd"   # sets ELECTRON_RUN_AS_NODE itself
 $R04     = 'F:\dsh-r04'
 
 $env:DSH_HOME                         = "$R04\dsh-home"
@@ -151,15 +176,15 @@ New-Item -ItemType Directory -Force -Path $env:DSH_HOME,"$R04\user-data","$R04\l
 3. **Install the plugin into that profile.**
 
    ```powershell
-   $env:ELECTRON_RUN_AS_NODE = '1'
-   & $DSH_EXE $DSH_CLI plugin --profile desktop add "$R04\pkg\dsh-wsl-native-0.8.0.tgz"
-   Remove-Item Env:\ELECTRON_RUN_AS_NODE
+   & $DSH_CLI plugin --profile desktop add "$R04\pkg\dsh-wsl-native-0.8.0.tgz"
    ```
 
-   The CLI loads `resourceDir\dsh` out of the asar and runs pnpm from
-   `resources\runtime\primary-runtime\dependencies\pnpm` — the path that is
-   missing today (§0.1). `dsh-wsl-native` ships `dsh.bundle.patch`, so pnpm
-   alone wires the bundle layer; no manual patch edit is needed.
+   `dsh.cmd` starts the Electron binary in Node mode with the bundled pnpm from
+   `resources\runtime\primary-runtime\dependencies\pnpm`, so no system Node or
+   pnpm is needed (verified present, §0.1). `dsh-wsl-native` ships
+   `dsh.bundle.patch`, so pnpm alone wires the bundle layer; no manual patch edit
+   is needed. The installed command refuses an uninitialized Desktop profile
+   instead of creating one, which is why step 1 must come first.
 
    Verify before launching:
 
@@ -170,8 +195,9 @@ New-Item -ItemType Directory -Force -Path $env:DSH_HOME,"$R04\user-data","$R04\l
    # package.json's dsh.profile.bundles plus the package's own dsh.bundle.patch
    ```
 
-   Only `<test DSH_HOME>\profiles\desktop` may change in this step. If anything
-   under `C:\Users\<owner>\.dsh` changes, stop and roll back.
+   Only `<test DSH_HOME>\profiles\desktop` may change in this step. The owner's
+   working home is `F:\-ToolBox-\DSH-Data\home` (from `HKCU\Environment`) and
+   must not change; if it does, stop and roll back.
 
 4. **Second launch — the test run.**
 
@@ -181,28 +207,17 @@ New-Item -ItemType Directory -Force -Path $env:DSH_HOME,"$R04\user-data","$R04\l
 
    Confirm the Desktop boots the test profile, not the working one: while it
    runs, `$env:DSH_HOME\profiles\desktop\lock` exists and its mtime is current,
-   while `C:\Users\<owner>\.dsh\profiles\desktop` mtimes stay at the values
+   while `F:\-ToolBox-\DSH-Data\home\profiles\desktop` mtimes stay at the values
    recorded in `snapshot-before.json`.
 
 Re-running the guard in step 0 before each DSH command is required; the
 `DSH_HOME` value is the only thing that decides which profile is used.
 
-### 2.1 Fallback install without pnpm (only with owner approval)
+### 2.1 Not needed
 
-If the runtime payload cannot be repaired before R04, the same result can be
-produced without pnpm, because the plugin has no runtime dependencies:
-
-```powershell
-$dest = "$env:DSH_HOME\profiles\desktop\node_modules\dsh-wsl-native"
-New-Item -ItemType Directory -Force -Path $dest | Out-Null
-tar -xzf "$R04\pkg\dsh-wsl-native-0.8.0.tgz" -C $R04\pkg          # package/ → unpacked tree
-Copy-Item -Recurse "$R04\pkg\package\*" $dest
-# add "dsh-wsl-native" to dsh.profile.bundles in $env:DSH_HOME\profiles\desktop\package.json
-```
-
-This is **not** the supported install path: it skips pnpm's dependency graph and
-the profile lock. It is acceptable only inside a disposable profile, must be
-labelled as such in the result, and must not be used on the working profile.
+The earlier pnpm-free fallback is withdrawn: the bundled pnpm exists in the real
+installation, so the supported command works. Do not place files into a profile
+by hand.
 
 ## 3. Isolation from the working Windows user
 
@@ -215,7 +230,7 @@ regardless of the plugin. Three options:
 | --- | --- | --- |
 | **A. Separate local Windows account `dshr04` + WSL distribution registered under it** | the whole user context: own `%USERPROFILE%`, `%APPDATA%`, `%LOCALAPPDATA%`, own WSL distro, its own interop target | needs an administrator once. **`F:` is a shared volume**: by default other local users can read `F:\_hermes`, `F:\CODE`, etc. The account alone is *not* protection unless the owner adds explicit deny ACEs for `dshr04` on those directories (an owner-side ACL change, not part of R04) |
 | **B. Same account, state-only isolation** | profile, userData, caches | no admin; every "isolation" result must be reported as state-only. Interop and `F:` remain reachable |
-| **C. Windows Sandbox / Hyper-V VM with only `F:\dsh-r04` shared** | strongest and disposable | needs virtualization; WSL inside the sandbox; the share must be read-write for `F:\dsh-r04` only |
+| **C. Hyper-V or VMware VM with only `F:\dsh-r04` shared** | strongest and disposable | needs a hypervisor plus nested virtualization for WSL2; nothing of the owner's Windows is reachable except the share |
 
 Recommendation: **A** if the owner accepts one local account, one WSL
 distribution and the ACL decision on `F:`; otherwise **C**; **B** only if the
@@ -224,6 +239,34 @@ execution-level.
 
 Do not edit `/etc/wsl.conf`, `.wslconfig`, or global WSL settings to disable
 interop: that is a machine-wide change outside this test.
+
+### 3.1 What this machine has today
+
+| Item | State | Consequence |
+| --- | --- | --- |
+| OS | Windows 10 Pro, build 26300.9711, 16 logical CPUs, 31.1 GiB RAM | a VM is feasible: 4 vCPU / 12 GiB / 60 GB leaves the host usable |
+| Hypervisor | `HypervisorPresent = True`, `vmcompute` running, but no `vmms.exe` and no Hyper-V PowerShell module | only the WSL2 platform is enabled; the Hyper-V role is **not** installed |
+| Windows Sandbox | `WindowsSandbox.exe` absent, feature not enabled | and WSL2 is not supported inside Windows Sandbox, so it is not an option for R04 |
+| VMware | `C:\Program Files\VMware\VMware Workstation` holds only `darwin.iso` / `darwinPre15.iso` | Workstation itself is not installed |
+| WSL | one distribution, `Ubuntu`, version 2, running | a second distribution can be registered without touching this one |
+| Free space | C: 59.5 GiB, F: 104.9 GiB | enough for a VM image on F: or C: |
+| Working Harness home | `DSH_HOME = F:\-ToolBox-\DSH-Data\home` (HKCU), 17 third-party plugins, Electron data still under `%APPDATA%` on C: | R04 must never point at this home |
+
+### 3.2 Requirements if option C is chosen
+
+1. Enable a hypervisor: the Hyper-V role (Windows 10/11 Pro, administrator,
+   reboot) or VMware Workstation 17 (nested VT-x/EPT). Both are machine changes
+   and need explicit owner approval.
+2. Nested virtualization must be on for the guest — `Set-VMProcessor
+   -ExposeVirtualizationExtensions $true` on Hyper-V, "Virtualize Intel VT-x/EPT"
+   on VMware. Without it `wsl --install` fails inside the guest.
+3. Guest resources: Windows 10/11 Pro x64, 4 vCPU, 12 GiB RAM, 60–80 GB disk.
+4. Inside the guest: `wsl --install -d Ubuntu`, then install Desktop 0.2.1-rc.5
+   from the same installer and run §2 with the guest's own paths.
+5. Shares: expose only `F:\dsh-r04` (or nothing, passing the package by ISO).
+   Disable clipboard/file sharing and other guest integrations for the run.
+6. Rollback is deleting the VM; the host install, its profile and its plugins are
+   never involved.
 
 ## 4. Scenario checklist
 
@@ -282,9 +325,11 @@ Written by the test:
   `%APPDATA%\Microsoft\Windows\Recent` (jump lists, from the shell),
   Windows event/temp files, and GPU shader caches under the driver.
 
-Never touched: `C:\Users\<owner>\.dsh`, `%APPDATA%\@deepseek-ai\dsh-desktop`,
-`%LOCALAPPDATA%\Programs\DeepSeek Harness`, `%LOCALAPPDATA%\@deepseek-aidsh-desktop-updater`,
-any owner project, any other WSL distribution.
+Never touched: the owner's working home `F:\-ToolBox-\DSH-Data\home` (with its 17
+third-party plugins), the installed application `F:\-ToolBox-\DSH`, the stale
+`C:\Users\<owner>\AppData\Local\Programs\DeepSeek Harness` copy, the owner's
+Electron userData, both updater caches, any owner project, any other WSL
+distribution.
 
 ## 6. Snapshot and rollback
 
@@ -292,15 +337,19 @@ Before the first launch, record a manifest of the working environment
 (read-only, no file content leaves the machine):
 
 ```powershell
-$paths = @("$env:USERPROFILE\.dsh", "$env:APPDATA\@deepseek-ai\dsh-desktop")
-Get-ChildItem -Recurse -Force -File $paths |
+# the owner's working roots, as configured in HKCU\Environment and on disk
+$paths = @('F:\-ToolBox-\DSH-Data\home', "$env:APPDATA\@deepseek-ai\dsh-desktop")
+Get-ChildItem -Recurse -Force -File $paths -ErrorAction SilentlyContinue |
+  Where-Object { $_.FullName -notmatch '\\sessions\\|\\.credentials\.yaml$' } |
   Select-Object FullName, Length, LastWriteTimeUtc |
   ConvertTo-Json -Depth 2 | Set-Content 'F:\dsh-r04\snapshot-before.json'
 ```
 
 After the last launch, repeat into `snapshot-after.json` and compare. Allowed
-differences: none for `~/.dsh`; only `logs\` growth under the working userData
-(if the working app was started at all — it must not be during R04).
+differences: none under `F:\-ToolBox-\DSH-Data\home` (file names and sizes are
+compared, not contents, and session files are excluded to avoid reading chats);
+only `logs\` growth under the working userData, and only if the working app was
+started at all — it must not be during R04.
 
 Rollback, in order, without deleting anything that is not ours:
 
@@ -322,12 +371,10 @@ Rollback, in order, without deleting anything that is not ours:
 
 ## 7. Owner actions required before R04
 
-1. **Repair the installation.** `<install>\resources\runtime` is missing, so the
-   supported plugin-install CLI cannot run (§0.1). Reinstall/repair 0.2.1-rc.5
-   from the vendor installer, then confirm
-   `resources\runtime\primary-runtime\dependencies\pnpm\bin\pnpm.mjs` and
-   `resources\runtime\bin` exist. Alternatively approve the manual placement
-   fallback in §2.1 for the test profile only.
+1. **Nothing to repair.** The real installation `F:\-ToolBox-\DSH` is complete,
+   including `resources\runtime`; the earlier blocker was a stale directory on
+   C: (§0.1). Only decide whether the leftover C: copy may stay untouched for the
+   whole run — it must not be used, repaired or deleted during R04.
 2. **Choose the isolation level** from §3 (A, B or C), and for A approve one
    local Windows account, one WSL distribution, and the decision about ACLs on
    the shared `F:` volume.
