@@ -33,19 +33,26 @@ Typed results (`HarnessResult<T>`, `ProcessResult`, `TransferResult`) replace th
 previous untyped return values; `src/errors.ts` defines the error codes so no
 module invents ad-hoc strings.
 
-Not yet migrated (known gap, tracked for the next change): `src/client-session.mjs`,
-`src/conversation-model.mjs`, and the eight presentational `.jsx` panel files.
-They are loaded through `allowJs: true` with `checkJs: false`, so they cannot
-silently break the typed modules, but they are not yet type-checked themselves.
+Every client runtime module is typed, including the session model and the
+conversation model (`client-session.ts`, `conversation-model.ts`). The eight
+presentational panel files (`page`, `components`, `conversations`, `sidebar`,
+`native-sidebar`, `workspace-dialogs`, `handoff-dialog`, `inheritance-ui`) are
+still `.jsx` and are loaded through `allowJs: true` with `checkJs: false`; their
+props cross the typed `ClientModel`/`ConversationModel` boundary, so a change in
+the typed modules breaks the build, but the JSX internals are not checked and
+their text is not localized yet. This is the remaining TypeScript gap in this
+release and the first item of the follow-up change.
 
 ### Toolchain
 
 ```bash
+npm run verify       # everything below, in one command
 npm run typecheck    # tsc -p tsconfig.json --noEmit
 npm run lint         # eslint .
 npm run i18n:check   # key/placeholder parity + client slice freshness
-npm test             # tsc to .test-build, then node --test
+npm test             # compile to .test-build, then node --test (153 tests)
 npm run build        # esbuild bundles + declarations
+npm run check:package # archive contents, size, secrets, licence
 ```
 
 `scripts/build.mjs` produces `dist/index.js`, `dist/service.js`, `dist/cli.js`,
@@ -71,7 +78,7 @@ dictionary slice (`src/i18n/client-strings.ts`) is shipped to the panel.
 The panel language switch writes the preference to the plugin state and reloads
 the panel strings; nothing else in DSH is touched.
 
-## 3. Permission modes
+## 3. Permission modes (security closure)
 
 | Mode | Intent | Notes |
 | --- | --- | --- |
@@ -79,11 +86,61 @@ the panel strings; nothing else in DSH is touched.
 | `Trusted` | Read-mostly work in the user's own Linux files | Same deny rules, fewer confirmations for writes inside the selected workspace. Time-boxed grants. |
 | `Full Access` | Explicit, user-initiated unrestricted work | Requires the literal confirmation phrase `FULL ACCESS`, is capped at 24 hours, and is never granted by the agent. |
 
-Guarantees that are actually enforced:
+### SEC-01 — Full Access really expires
+
+- `PermissionState` persists `modeIssuedAt` and `modeExpiresAt` next to the mode.
+  Every policy read runs a refresh, so the deadline is enforced by the operation
+  that would have used the elevated rights, not by a UI timer.
+- At the deadline (24 h maximum, `hours` is clamped), on an inconsistent stored
+  window, or on a backwards clock jump larger than 60 s, the policy withdraws
+  Full Access and returns to `Protected`. Withdrawal drops the window fields and
+  is flagged for persistence, so a restart cannot resurrect it.
+- `parsePermissionState` never widens: a missing, over-long, future-dated or
+  garbage window, an unknown mode, or a malformed grant all narrow the state.
+  Hand-editing `mode: "full-access"` into the settings file therefore loads as
+  `Protected`.
+- Grants are pruned on every read as well, so an expired grant cannot be used.
+
+### SEC-02 — no agent self-escalation
+
+- `userInitiated: true` is gone. Policy mutations (`setMode`, grants, revocation)
+  require a `PolicyAuthority` object that only `createUserSurfaceAuthority` can
+  mint, and that is only accepted through a process-local `WeakSet`. A look-alike
+  object, a boolean flag, or a JSON payload is rejected with `PERMISSION_DENIED`.
+- Evidence required to mint: the authenticated control route, or an interactive
+  terminal (`stdin.isTTY && stdout.isTTY`). The CLI therefore refuses
+  `dsh-wsl permissions`/`grant`/`revoke` from a tool-spawned process, which is
+  what the agent's `exec` produces.
+- Tool arguments carrying `mode`, `permissions`, `grant`, `grants`,
+  `userInitiated`, `confirm`, `authority` or `hours` are rejected before any
+  handler runs.
+- Remaining limit, stated plainly: the plugin runs as the same WSL/Windows user
+  as the agent. Any protection that depends on that user's files is advisory. An
+  agent that can allocate a pty (`script -qc …`) or edit the settings file with a
+  valid window can still act as that user; only operating-system accounts,
+  containers or a hypervisor can separate them. The plugin does not claim more.
+
+### SEC-03 — path decisions on the verifying host
+
+- A path the executing host cannot resolve is never auto-approved for writes, not
+  even in Full Access: `UNVERIFIED_PATH` forces the per-call approval. This is
+  the WSL-path-from-Windows and Windows-path-from-Linux case.
+- UNC shares (`\\server\share`) and Win32 device namespaces (`\\?\`, `\\.\`)
+  are hard denials in every mode.
+- Mounted Windows drives (`/mnt/*`, `/media/*`, `/run/media/*`, `/Volumes/*`) and
+  cross-filesystem targets always require approval outside Full Access, even with
+  a matching grant, because POSIX modes do not protect them.
+- Symbolic links and NTFS junctions are resolved through their deepest existing
+  ancestor; an escape out of every allowed root is a hard denial.
+- Empty, relative, oversized and control-character paths are refused.
+- `HOME`, `USERPROFILE` and `HOMEDRIVE`/`HOMEPATH` secret roots are read from the
+  process environment only, so a request cannot redirect the denied roots.
+
+### Guarantees that are actually enforced
 
 - Tool arguments cannot carry policy fields (`mode`, `permissions`, `grant`,
-  `userInitiated`, `confirm`, …). `src/index.ts` rejects them before any work
-  starts, so the agent cannot widen its own authority.
+  `userInitiated`, `confirm`, `authority`, `hours`). `src/index.ts` rejects them
+  before any work starts, so the agent cannot widen its own authority.
 - Denied paths are refused before the child process is spawned, and the decision
   is reported with a localized reason.
 - Grants expire; there is no "remember forever" path.
@@ -125,10 +182,17 @@ sha256sum dsh-wsl-native-0.8.0.tgz
 - `npx eslint .` — clean.
 - `node scripts/check-i18n.mjs` — 3 locales × 301 keys, placeholders matching,
   client slice current.
-- `node scripts/test.mjs` — 53 tests, 53 pass, 0 fail (i18n, paths, permissions,
-  worker over a real stdio child, handoff signing, inheritance merge, routes).
+- `node scripts/test.mjs` — **153 tests, 151 pass, 0 fail, 2 skipped**
+  (Windows-only), covering the upstream v0.7.0 suites migrated to `test/legacy/`
+  and the new `test/security.test.ts` (expiry, restart, corrupt state, clock
+  jumps, authority forgery, CLI escalation, settings edits, symlinks, UNC,
+  mounts, empty paths, cross-filesystem writes).
+- GitHub Actions matrix — Ubuntu and Windows, Node 22 and 24: typecheck, lint,
+  i18n check, tests, build and `npm pack --dry-run` all green.
 - `npm run build` — host, worker, CLI, client bundle, and declarations emitted;
   client bundle within the DSH size cap.
+- `node scripts/check-package.mjs` — 106 files, no `src/`, tests, temp files or
+  secret-like content, MIT licence present, no stale declarations.
 
 Nothing in this release has been installed into a working Harness Desktop
 profile by the development process, and no user project, global DSH setting, or

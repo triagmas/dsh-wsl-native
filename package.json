@@ -46,7 +46,9 @@
     "bench:wsl": "node scripts/benchmark.mjs",
     "test:package": "node scripts/package-smoke.mjs",
     "prepack": "npm run build",
-    "i18n:build": "node scripts/build-client-dict.mjs"
+    "i18n:build": "node scripts/build-client-dict.mjs",
+    "verify": "npm run typecheck && npm run lint && npm run i18n:check && npm test && npm run build && npm run check:package",
+    "check:package": "node scripts/check-package.mjs"
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
