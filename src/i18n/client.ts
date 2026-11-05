@@ -5,6 +5,7 @@
  */
 import { CLIENT_DICTIONARIES } from './client-strings.js';
 import { format } from './format.js';
+import { normalizeLocale } from './types.js';
 import { FALLBACK_LOCALE, type Locale, type MessageParams } from './types.js';
 import type { MessageKey } from './en.js';
 import type { Translator } from './core.js';
@@ -26,7 +27,7 @@ let active: Translator = createClientTranslator('en');
 
 /** Switch the panel language; the model calls this after every status refresh. */
 export function setClientLocale(locale: Locale | string): void {
-  active = createClientTranslator(locale as Locale);
+  active = createClientTranslator((normalizeLocale(locale) ?? FALLBACK_LOCALE) as Locale);
 }
 
 /** Current panel locale. */
@@ -37,4 +38,17 @@ export function clientLocale(): Locale {
 /** Translate one key for the panel. */
 export function ct(key: MessageKey, params?: MessageParams): string {
   return active.t(key, params);
+}
+
+/**
+ * Format an epoch timestamp for the panel using the active locale.
+ *
+ * Uses the browser's own Intl data, so no extra locale tables are bundled.
+ */
+export function formatDate(value: number, options?: Intl.DateTimeFormatOptions): string {
+  return new Intl.DateTimeFormat(clientLocale(), {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    ...options,
+  }).format(new Date(value));
 }

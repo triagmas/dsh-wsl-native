@@ -6,6 +6,7 @@ import { environmentKey, type CallOptions, type ServiceStatus, type WslService, 
 import { handoffUrl, appOrigin, type Handoff } from './handoff.js';
 import { signHandoff, verifyHandoff } from './handoff-auth.js';
 import { ProfileInheritance, type InheritanceStatus } from './inheritance.js';
+import { createUserSurfaceAuthority } from './permissions/index.js';
 import { t } from './i18n/index.js';
 
 export const PREFIX = '/dsh-wsl-native';
@@ -374,6 +375,31 @@ export function createController(
         }
         return { id: handoff.id, settings };
       }
+      // Permission mutations are only reachable from this authenticated control
+      // route: DSH has already verified the desktop/browser session before the
+      // carrier invoked us, so the route itself is the user-surface evidence.
+      if (path === 'permissions/mode') {
+        const authority = createUserSurfaceAuthority({ kind: 'control-route', authenticated: true });
+        return service.setPermissionMode(
+          {
+            mode: text(params.mode) ?? '',
+            confirm: text(params.confirm),
+            hours: count(params.hours) ?? undefined,
+          },
+          authority,
+        );
+      }
+      if (path === 'permissions/grant') {
+        const authority = createUserSurfaceAuthority({ kind: 'control-route', authenticated: true });
+        return service.addPermissionGrant(
+          { capability: text(params.capability), target: text(params.target), hours: count(params.hours) },
+          authority,
+        );
+      }
+      if (path === 'permissions/revoke') {
+        const authority = createUserSurfaceAuthority({ kind: 'control-route', authenticated: true });
+        return service.revokePermissionGrant(text(params.id), authority);
+      }
       if (path === 'native/inheritance') {
         const { entry } = await selected(params, signal);
         ensure(!entry.operation, 'SETUP_BUSY', 'routes.inheritanceBusy');
@@ -446,6 +472,9 @@ export function registerControlRoutes(connection: ConnectionLike, controller: Br
     'directory/create',
     'open',
     'native/enter',
+    'permissions/mode',
+    'permissions/grant',
+    'permissions/revoke',
     'native/inheritance',
     'native/prepare',
     'native/start',

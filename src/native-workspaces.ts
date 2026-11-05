@@ -53,8 +53,8 @@ export interface SidebarModel {
     setUnified(value: boolean): void;
     requestWorkspace(): void;
     newWindows(workspaceId?: string): Promise<void>;
-    newLinux(entry?: { settings?: { distro?: string } }): Promise<void>;
-    entries: Map<string, { settings: { distro: string }; ready?: boolean }>;
+    newLinux(entry?: { settings: { distro: string }; ready?: boolean }): Promise<void>;
+    entries: ReadonlyMap<string, { settings: { distro: string }; ready?: boolean }>;
     activeKey: string | null;
     busy: boolean;
     unified: boolean;

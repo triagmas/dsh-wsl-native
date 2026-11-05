@@ -1,9 +1,10 @@
 import styles from './client.css';
-import { TerminalIcon } from './components.jsx';
-import { WslPage } from './page.jsx';
+import { TerminalIcon } from './components.js';
+import { WslPage } from './page.js';
 import { createClientModel } from './client-session.js';
 import { createConversations } from './conversation-model.js';
-import { installConversationSlots } from './conversations.jsx';
+import type { PanelModel } from './panel-types.js';
+import { installConversationSlots } from './conversations.js';
 import { ct, setClientLocale } from './i18n/client.js';
 import type { ClientContext, ClientModel, HarnessResult, PanelApi } from './client-types.js';
 
@@ -27,9 +28,12 @@ function createApi(ctx: PanelContext): PanelApi {
 
 export function apply(ctx: PanelContext): void {
   const api = createApi(ctx);
-  const model: ClientModel = createClientModel(ctx, api);
-  model.conversations = createConversations(ctx, api, model);
-  installConversationSlots(ctx, model, api);
+  // `createConversations` finishes the two-phase init, so the panel model is
+  // complete before any component reads it.
+  const base: ClientModel = createClientModel(ctx, api);
+  const model = base as PanelModel;
+  base.conversations = createConversations(ctx, api, base);
+  installConversationSlots(ctx, base, api);
   ctx.effect(() => () => model.dispose?.());
   ctx.effect(() => {
     const style = document.createElement('style');

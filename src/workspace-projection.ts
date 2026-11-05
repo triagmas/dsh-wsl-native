@@ -1,9 +1,17 @@
 import { ct } from './i18n/client.js';
-import type { Catalog, CatalogRow, CatalogWorkspace, SessionList, WorkspaceList } from './client-types.js';
+import type {
+  Catalog,
+  CatalogRow,
+  CatalogWorkspace,
+  EnvironmentSettings,
+  SessionList,
+  WorkspaceList,
+} from './client-types.js';
 
 /** One Linux environment attached to the Windows sidebar. */
 export interface ProjectedEntry {
   key: string;
+  settings: EnvironmentSettings;
   catalog?: Catalog | null;
 }
 

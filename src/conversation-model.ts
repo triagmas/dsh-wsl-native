@@ -1,4 +1,5 @@
 import { stored } from './client-session.js';
+import type { CatalogRow } from './client-types.js';
 import { startSession } from './workspace-session.js';
 import { createConnectionRecovery, type RecoveryState } from './connection-recovery.js';
 import { createWorkHandoff } from './work-handoff.js';
@@ -68,7 +69,8 @@ interface GuestMessageLike {
 export type ConversationDialog =
   | { type: 'workspace' }
   | { type: 'rename'; target: ConversationRow }
-  | { type: 'handoff'; source: { id: string; row: ConversationRow; entry?: ConversationEntry } }
+  | { type: 'archive'; target: ConversationRow }
+  | { type: 'handoff'; source: { id: string; row: CatalogRow; entry?: ConversationEntry } }
   | null;
 
 /** Pending request forwarded to a guest. */
@@ -92,7 +94,7 @@ export interface ConversationModel {
   unified: boolean;
   requestWorkspace(): void;
   requestRename(target: ConversationRow): void;
-  requestHandoff(source: { id: string; row: ConversationRow; entry?: ConversationEntry }): void;
+  requestHandoff(source: { id: string; row: CatalogRow; entry?: ConversationEntry }): void;
   handoff(
     entry: ConversationEntry | null | undefined,
     action: string,

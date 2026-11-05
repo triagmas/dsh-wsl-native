@@ -3,7 +3,15 @@ import { openWorkspace } from './workspace-session.js';
 import { readEmbed } from './conversation-protocol.js';
 import { startConversationGuest } from './conversation-guest.js';
 import { ct } from './i18n/client.js';
-import type { ClientContext, ClientModel, HandoffRecord, PanelApi, PanelStatus, Store } from './client-types.js';
+import type {
+  ClientContext,
+  ClientModel,
+  HandoffRecord,
+  PanelApi,
+  PanelStatus,
+  PendingHandoff,
+  Store,
+} from './client-types.js';
 
 const PREFIX = 'dsh-wsl-native:';
 
@@ -99,7 +107,7 @@ export function createClientModel(ctx: ClientContext, api: PanelApi): ClientMode
     state: null,
     error: null,
     draft: null,
-    pending: stored<unknown>('pending') ?? null,
+    pending: stored<PendingHandoff>('pending'),
     popup: null,
     parentOrigin: appOrigin(stored<string>('parentOrigin')),
     readyLink: null,
@@ -135,7 +143,7 @@ export function createClientModel(ctx: ClientContext, api: PanelApi): ClientMode
         });
       return refreshPromise;
     },
-    setPending(pending: unknown) {
+    setPending(pending: PendingHandoff | null) {
       model.pending = pending;
       stored('pending', pending);
       model.emit();

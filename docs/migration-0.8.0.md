@@ -24,6 +24,7 @@ disabled only where DSH's own types require it, and ES2023 / NodeNext resolution
 | Permissions | `src/permissions/{types,paths,index}.ts`, `src/policy.ts` |
 | Panel runtime | `src/client-types.ts`, `src/conversation-{protocol,guest}.ts`, `src/desktop-{mailbox,view}.ts`, `src/workspace-{commands,projection,session}.ts`, `src/connection-recovery.ts`, `src/native-workspaces.ts`, `src/work-handoff.ts` |
 | i18n | `src/i18n/{types,format,core,index,client,en,ru,zh-CN}.ts` |
+| Panel components | `src/{page,components,conversations,sidebar,native-sidebar,workspace-dialogs,handoff-dialog,inheritance-ui,permissions-ui}.tsx` |
 
 Explicit types are declared at every boundary that another module, RPC call,
 tool, CLI command, or the browser panel consumes: `WorkerRequest`/`WorkerResponse`,
@@ -35,13 +36,19 @@ module invents ad-hoc strings.
 
 Every client runtime module is typed, including the session model and the
 conversation model (`client-session.ts`, `conversation-model.ts`). The eight
-presentational panel files (`page`, `components`, `conversations`, `sidebar`,
-`native-sidebar`, `workspace-dialogs`, `handoff-dialog`, `inheritance-ui`) are
-still `.jsx` and are loaded through `allowJs: true` with `checkJs: false`; their
-props cross the typed `ClientModel`/`ConversationModel` boundary, so a change in
-the typed modules breaks the build, but the JSX internals are not checked and
-their text is not localized yet. This is the remaining TypeScript gap in this
-release and the first item of the follow-up change.
+presentational panel files are now `.tsx` with no JavaScript exception left in
+`tsconfig.json` (`allowJs`/`checkJs` are gone): `page`, `components`,
+`conversations`, `sidebar`, `native-sidebar`, `workspace-dialogs`,
+`handoff-dialog`, `inheritance-ui`, plus the new `permissions-ui`. The React
+markup is unchanged; only props, state, effects and DOM access gained types.
+
+Two ambient declarations cover the pieces the published packages do not ship:
+`types/assets.d.ts` (CSS imported as text) and `types/desktop.d.ts`
+(`window.dshDesktop`, and `inert` under React 18 types). Types were added to the
+structural boundary instead of suppressing errors: `SlotDefinition`/`SlotEntry`
+for slot mirroring, `ReadonlyMap` for catalog projections, `ProjectionStatus` and
+`PendingHandoff` for the sidebar, and `PermissionMode`/`PermissionView` for the
+permission panel. No `any`, no `@ts-ignore`, no `@ts-expect-error` was added.
 
 ### Toolchain
 
@@ -50,7 +57,7 @@ npm run verify       # everything below, in one command
 npm run typecheck    # tsc -p tsconfig.json --noEmit
 npm run lint         # eslint .
 npm run i18n:check   # key/placeholder parity + client slice freshness
-npm test             # compile to .test-build, then node --test (153 tests)
+npm test             # compile to .test-build, then node --test (160 tests)
 npm run build        # esbuild bundles + declarations
 npm run check:package # archive contents, size, secrets, licence
 ```
@@ -58,8 +65,11 @@ npm run check:package # archive contents, size, secrets, licence
 `scripts/build.mjs` produces `dist/index.js`, `dist/service.js`, `dist/cli.js`,
 `dist/worker.js`, `dist/client.js` and `dist/types/**`. The client bundle is
 capped at 262144 bytes because the DSH client loader rejects anything larger;
-the current bundle is well under the cap, which is why only the browser-relevant
-dictionary slice (`src/i18n/client-strings.ts`) is shipped to the panel.
+the current bundle is **234445 bytes**. Only the browser-relevant dictionary
+slice (`src/i18n/client-strings.ts`) is shipped to the panel, and that slice is
+now derived from the real client module graph instead of every `ui.*` string, so
+unused host-only copy no longer consumes the budget. The build fails if the
+bundle grows past the cap.
 
 ## 2. Localization (ru, en, zh-CN)
 
@@ -69,9 +79,16 @@ dictionary slice (`src/i18n/client-strings.ts`) is shipped to the panel.
   `DSH_WSL_NATIVE_LOCALE` / `LANG` environment, then the operating-system
   locale, and finally English. The panel receives the resolved locale in the
   status response, so the Windows window and the WSL guest always agree.
-- All 301 message keys exist in all three dictionaries. `npm run i18n:check`
-  fails the build when a key, an interpolation placeholder, or the generated
-  client slice is out of sync — missing translations cannot ship silently.
+- All **568** message keys exist in all three dictionaries, including every
+  string the panel renders (buttons, dialogs, errors, hints, settings).
+  `npm run i18n:check` fails the build when a key, an interpolation
+  placeholder, or the generated client slice is out of sync — missing
+  translations cannot ship silently. `test/panel.test.ts` additionally asserts
+  that every `ct()` key used in the panel sources exists in all three locales
+  and in the browser slice.
+- Language switching is verified in `test/panel.test.ts`: `ru-RU` resolves to
+  `ru`, an unknown tag falls back to English, and dates render with the active
+  locale via `Intl`.
 - Only this plugin's own strings are translated. DeepSeek Harness core, its
   agent output, and official DSH components keep their upstream language.
 
@@ -100,6 +117,42 @@ the panel strings; nothing else in DSH is touched.
   Hand-editing `mode: "full-access"` into the settings file therefore loads as
   `Protected`.
 - Grants are pruned on every read as well, so an expired grant cannot be used.
+
+### Permission controls in the panel
+
+The panel renders the existing policy rather than a second approval system:
+
+- The three modes are radio buttons; the active one is marked and every button
+  is disabled while a change is in flight.
+- The active mode's expiry is shown as both a countdown ("in 3 h 12 min") and an
+  absolute local time, because a countdown alone hides a stale window.
+- Standing grants are listed with capability, target, root and expiry, and each
+  can be revoked individually. A grant can be added for `exec`, `write` or
+  `copy` with a lifetime of 1, 4, 8 or 24 hours; the host clamps the value and
+  rejects capabilities it does not implement.
+- A short boundary note states that the agent cannot call these endpoints.
+
+Each control calls `permissions/mode`, `permissions/grant` or
+`permissions/revoke`. The handler mints its own `PolicyAuthority` from the
+authenticated control route, so a rendered button is evidence of an
+authenticated user surface, not of an agent request. No tool, RPC frame or agent
+call can reach these paths.
+
+### Full Access and DSH's own `danger-full-access`
+
+These are different switches and the plugin does not merge them:
+
+| Switch | Owner | Effect |
+| --- | --- | --- |
+| Plugin mode `Full Access` | The plugin, via the panel or an interactive CLI | Skips the plugin's own path and cross-OS checks for up to 24 hours, except for unverified paths, UNC/device paths and symlink escapes. |
+| DSH `sandboxPolicy: danger-full-access` | DSH itself; only the user can set it in the DSH interface | Upstream DSH behaviour is to skip its per-call approval prompt. `src/policy.ts` keeps that contract and does not add a second prompt. |
+
+Consequences, stated plainly: with DSH `danger-full-access` on, the per-call
+approval prompt is skipped by DSH itself; the plugin's own denials (state file,
+secrets, UNC, device namespaces, symlink escapes beyond every root, unverified
+paths) still apply because they are evaluated before any prompt. Turning the
+plugin to Full Access never turns on `danger-full-access`, and the plugin cannot
+change that DSH setting — it has no code path that writes it.
 
 ### SEC-02 — no agent self-escalation
 
@@ -180,18 +233,21 @@ sha256sum dsh-wsl-native-0.8.0.tgz
 
 - `npx tsc -p tsconfig.json --noEmit` — clean.
 - `npx eslint .` — clean.
-- `node scripts/check-i18n.mjs` — 3 locales × 301 keys, placeholders matching,
+- `node scripts/check-i18n.mjs` — 3 locales × 568 keys, placeholders matching,
   client slice current.
-- `node scripts/test.mjs` — **153 tests, 151 pass, 0 fail, 2 skipped**
-  (Windows-only), covering the upstream v0.7.0 suites migrated to `test/legacy/`
-  and the new `test/security.test.ts` (expiry, restart, corrupt state, clock
-  jumps, authority forgery, CLI escalation, settings edits, symlinks, UNC,
-  mounts, empty paths, cross-filesystem writes).
+- `node scripts/test.mjs` — **160 tests, 158 pass, 0 fail, 2 skipped**
+  (Windows-only), covering the upstream v0.7.0 suites migrated to `test/legacy/`,
+  `test/security.test.ts` (expiry, restart, corrupt state, clock jumps, authority
+  forgery, CLI escalation, settings edits, symlinks, UNC, mounts, empty paths,
+  cross-filesystem writes) and `test/panel.test.ts` (panel translation keys in all
+  three locales and in the browser slice, locale switching, localized dates, the
+  permission mode window in the status payload, control-route mode/grant/revoke,
+  and rejection of unknown modes and unconfirmed Full Access).
 - GitHub Actions matrix — Ubuntu and Windows, Node 22 and 24: typecheck, lint,
-  i18n check, tests, build and `npm pack --dry-run` all green.
+  i18n check, tests, build and `npm run check:package` all green.
 - `npm run build` — host, worker, CLI, client bundle, and declarations emitted;
-  client bundle within the DSH size cap.
-- `node scripts/check-package.mjs` — 106 files, no `src/`, tests, temp files or
+  client bundle 234445 / 262144 bytes.
+- `node scripts/check-package.mjs` — 108 files, no `src/`, tests, temp files or
   secret-like content, MIT licence present, no stale declarations.
 
 Nothing in this release has been installed into a working Harness Desktop

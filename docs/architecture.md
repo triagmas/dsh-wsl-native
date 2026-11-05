@@ -101,25 +101,25 @@ Linux 插件完成签名验证后，暴露只读的 `__DSH_WSL_DESKTOP_V1__` 接
 
 | 文件 | 责任 |
 | --- | --- |
-| `src/index.mjs`、`src/policy.mjs` | 官方工具注册与批准服务 |
-| `src/service.mjs` | 设置、路径归一化、双向复制和统一调用 |
-| `src/connector.mjs`、`src/rpc.mjs` | 引导加载、连接池、协议和取消 |
-| `src/worker.mjs`、`src/process.mjs`、`src/encoding.mjs` | 两端进程、文件、任务、文本解码 |
-| `src/launcher.mjs`、`src/install-cache.mjs` | 安装、缓存下载、启动与停止 |
-| `src/routes.mjs` | 管理接口 |
-| `src/inheritance.mjs`、`src/inheritance-ui.jsx` | 插件和配置继承、差异保留与管理入口 |
-| `src/native-sidebar.jsx`、`src/workspace-projection.mjs` | 复用原生列表，投影跨环境 ID 与联合排序，分派操作 |
-| `src/native-workspaces.mjs`、`src/sidebar.jsx` | 头部按钮、WSL 标志与可选紧凑列表 |
-| `src/workspace-commands.mjs`、`src/workspace-dialogs.jsx` | 固定的 Linux 工作区操作、创建和对话管理 |
-| `src/work-handoff.mjs`、`src/handoff-dialog.jsx` | 双向交接、摘录预览、草稿保留与防重复提交 |
-| `src/client.jsx`、`src/page.jsx`、`src/components.jsx`、`src/client.css` | 原生侧边栏页面、目录弹窗与主题样式 |
-| `src/client-session.mjs` | 页面状态、工作区打开和会话恢复 |
-| `src/conversations.jsx`、`src/conversation-model.mjs` | 统一对话列表、常驻页面、导航与页面生命周期 |
-| `src/conversation-guest.mjs`、`src/conversation-protocol.mjs` | Linux 页面通信、来源验证、有限元数据投影 |
-| `src/desktop-view.mjs`、`src/desktop-mailbox.mjs` | Desktop 官方容器、固定操作通道与元数据变化通知 |
-| `src/handoff.mjs`、`src/handoff-auth.mjs` | 切换链接、本机来源限制与实例签名 |
-| `src/localhost.mjs` | 启动后等待本机转发就绪 |
-| `src/cli.mjs`、`bin/dsh-wsl.mjs` | 命令行入口 |
+| `src/index.ts`、`src/policy.ts` | 官方工具注册与批准服务 |
+| `src/service.ts` | 设置、路径归一化、双向复制和统一调用 |
+| `src/connector.ts`、`src/rpc.ts` | 引导加载、连接池、协议和取消 |
+| `src/worker.ts`、`src/process.ts`、`src/encoding.ts` | 两端进程、文件、任务、文本解码 |
+| `src/launcher.ts`、`src/install-cache.ts` | 安装、缓存下载、启动与停止 |
+| `src/routes.ts` | 管理接口 |
+| `src/inheritance.ts`、`src/inheritance-ui.tsx` | 插件和配置继承、差异保留与管理入口 |
+| `src/native-sidebar.tsx`、`src/workspace-projection.ts` | 复用原生列表，投影跨环境 ID 与联合排序，分派操作 |
+| `src/native-workspaces.ts`、`src/sidebar.tsx` | 头部按钮、WSL 标志与可选紧凑列表 |
+| `src/workspace-commands.ts`、`src/workspace-dialogs.tsx` | 固定的 Linux 工作区操作、创建和对话管理 |
+| `src/work-handoff.ts`、`src/handoff-dialog.tsx` | 双向交接、摘录预览、草稿保留与防重复提交 |
+| `src/client.tsx`、`src/page.tsx`、`src/components.tsx`、`src/client.css` | 原生侧边栏页面、目录弹窗与主题样式 |
+| `src/client-session.ts` | 页面状态、工作区打开和会话恢复 |
+| `src/conversations.tsx`、`src/conversation-model.ts` | 统一对话列表、常驻页面、导航与页面生命周期 |
+| `src/conversation-guest.ts`、`src/conversation-protocol.ts` | Linux 页面通信、来源验证、有限元数据投影 |
+| `src/desktop-view.ts`、`src/desktop-mailbox.ts` | Desktop 官方容器、固定操作通道与元数据变化通知 |
+| `src/handoff.ts`、`src/handoff-auth.ts` | 切换链接、本机来源限制与实例签名 |
+| `src/localhost.ts` | 启动后等待本机转发就绪 |
+| `src/cli.ts`、`bin/dsh-wsl.mjs` | 命令行入口 |
 
 客户端产物保留在 `lib/client.js`，工作进程产物保留在 `lib/worker.mjs`。发布包无需在用户机器上现场构建。
 

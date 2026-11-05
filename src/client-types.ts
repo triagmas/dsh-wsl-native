@@ -8,6 +8,9 @@
  * by the runtime guards in `conversation-protocol.ts` before it is trusted.
  */
 
+import type { ConversationModel } from './conversation-model.js';
+import type { GuestState } from './conversation-guest.js';
+
 /** One reactive store slice: snapshot plus change subscription. */
 export interface Store<T> {
   getSnapshot(): T;
@@ -127,9 +130,34 @@ export interface ConnectionService {
 }
 
 /** Slot registry used for the main panel and the sidebar entry. */
+export interface SlotDefinition {
+  name: string;
+  key?: string;
+  id?: string;
+  order?: number;
+  priority?: number;
+  label?: () => string;
+  store?: unknown;
+  locale?: string;
+  inject?: unknown;
+  children?: Record<string, SlotDefinition>;
+}
+
+/** One slot registration as the mirroring code reads it back. */
+export interface SlotEntry {
+  name?: string;
+  component: unknown;
+  options?: Record<string, unknown>;
+  inject?: unknown;
+  store?: { spec?: { persist?: string } } | null;
+  locale?: string;
+  children?: Record<string, SlotEntry>;
+}
+
 export interface SlotsService {
-  register(definition: { name: string; key?: string; id?: string; order?: number; label?: () => string }, component: unknown): () => void;
-  inject(name: string, callback: () => () => void): void;
+  register(definition: SlotDefinition, component: unknown): () => void;
+  entries(name: string): SlotEntry[];
+  inject(name: string, callback: () => (() => void) | void): void;
   subscribe(name: string, listener: () => void): () => void;
 }
 
@@ -147,6 +175,32 @@ export interface ClientContext {
   inject(dependencies: string[], callback: (ctx: ClientContext) => void): void;
 }
 
+/** One directory entry returned by the host bridge. */
+export interface DirectoryEntry {
+  name: string;
+  type: 'directory' | 'file' | 'symlink' | 'other';
+}
+
+/** One page of a directory listing. */
+export interface DirectoryListing {
+  path: string;
+  entries: DirectoryEntry[];
+  nextOffset?: number | null;
+}
+
+/** One bridge connection as reported by the host. */
+export interface PoolConnection {
+  target: [string, ...unknown[]];
+  connected: boolean;
+  info?: { user?: string; home?: string; node?: string } | null;
+}
+
+/** A launch request waiting for the Linux host to become ready. */
+export interface PendingHandoff {
+  id: string;
+  mode: 'new' | 'same';
+}
+
 /** A sub-model that cleans up after itself. */
 export interface DisposableModel {
   dispose?(): void;
@@ -159,17 +213,17 @@ export interface DisposableModel {
 export interface ClientModel {
   state: PanelStatus | null;
   error: string | null;
-  draft: string | null;
-  pending: unknown;
-  popup: unknown;
+  draft: { distro: string; user: string; directory: string } | null;
+  pending: PendingHandoff | null;
+  popup: Window | null;
   parentOrigin: string | null;
-  readyLink: unknown;
-  guest?: DisposableModel;
-  conversations?: DisposableModel;
+  readyLink: string | null;
+  guest?: GuestState | null;
+  conversations?: ConversationModel;
   subscribe(listener: () => void): () => void;
   emit(): void;
   refresh(): Promise<PanelStatus>;
-  setPending(pending: unknown): void;
+  setPending(pending: PendingHandoff | null): void;
   remember(): void;
   adopt(): Promise<void>;
   dispose?(): void;
@@ -242,9 +296,14 @@ export interface GrantView {
   expiresAt: number | null;
 }
 
+/** The three permission modes the plugin supports. */
+export type PermissionMode = 'protected' | 'trusted' | 'full-access';
+
 /** Permission state shown by the panel. */
 export interface PermissionView {
-  mode: 'protected' | 'trusted' | 'full-access';
+  mode: PermissionMode;
+  modeIssuedAt: number | null;
+  modeExpiresAt: number | null;
   grants: GrantView[];
 }
 
@@ -280,7 +339,7 @@ export interface PanelStatus {
   profiles: (EnvironmentSettings & { recentDirectories: string[]; storage?: string })[];
   distros: { name: string; state: string; version: number; isDefault: boolean }[];
   permissions: PermissionView;
-  pool: { connections: unknown[] };
+  pool: { connections: PoolConnection[] };
   error: string | null;
   parentOrigin: string | null;
   launchDirectory: string | null;
