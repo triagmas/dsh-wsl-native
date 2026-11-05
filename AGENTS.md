@@ -2,17 +2,18 @@
 
 ## Mandatory: read project context before proposing work
 
-This repository is a **plugin for the official DeepSeek Harness Desktop (Windows) that connects to a full native Harness runtime in an existing WSL2 Linux installation**. It is **not** a new Desktop app, VM project, or Windows security platform.
+This repository is a **plugin for the official DeepSeek Harness Desktop (Windows)**. The **owner's primary requirement** is that normal New Chat and agent/tool execution default to the **full native Harness in the existing WSL2 Ubuntu** while Desktop remains the Windows UI, without selecting WSL for every task. The existing dual-host chooser is not the intended default UX. This is **not** a new Desktop app, VM project, or security platform.
 
 Before designing, coding or assigning work, read in order:
 
 1. [docs/project-context.md](docs/project-context.md) — owner's intent, non-goals and approved boundaries.
-2. [docs/product-spec.md](docs/product-spec.md) — requirements, acceptance criteria and localization.
-3. [docs/architecture.md](docs/architecture.md) — established implementation.
-4. [docs/roadmap.md](docs/roadmap.md) — scope, milestones and merge gates.
-5. [docs/status.md](docs/status.md) — verified current state, open blockers.
-6. [docs/decisions.md](docs/decisions.md) — decisions already made.
-7. [docs/documentation-policy.md](docs/documentation-policy.md) — English-canonical docs and RU/ZH exceptions.
+2. [docs/wsl-first.md](docs/wsl-first.md) — mandatory default execution behavior.
+3. [docs/product-spec.md](docs/product-spec.md) — requirements, acceptance criteria and localization.
+4. [docs/architecture.md](docs/architecture.md) — established implementation.
+5. [docs/roadmap.md](docs/roadmap.md) — scope, milestones and merge gates.
+6. [docs/status.md](docs/status.md) — verified current state, open blockers.
+7. [docs/decisions.md](docs/decisions.md) — decisions already made.
+8. [docs/documentation-policy.md](docs/documentation-policy.md) — English-canonical docs and RU/ZH exceptions.
 
 If an idea does not advance the agreed roadmap, do **not** silently turn it into a task. Ask for a new owner decision.
 
