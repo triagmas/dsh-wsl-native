@@ -746,12 +746,15 @@ html[data-dsh-wsl-conversation] [data-rightbar-col] { visibility:hidden; pointer
   }
 }
 [data-dsh-wsl-replaced] { display:none !important; }
-.dsh-wsl-new-pair { display:flex; gap:6px; margin:0 2px 12px; }
-.dsh-wsl-new-pair > button { display:flex; align-items:center; justify-content:center; gap:7px; flex:1; min-width:0; height:38px; border:1px solid var(--dsw-alias-border-l4); border-radius:var(--dsw-radius-button,10px); font:14px var(--dsw-font-family); cursor:pointer; transition:background .12s ease; }
-.dsh-wsl-new-windows { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-base); }
-.dsh-wsl-new-pair > .dsh-wsl-new-linux { color:var(--dsw-alias-label-primary-foreground); background:var(--dsw-alias-button-primary-fill); border-color:transparent; }
-.dsh-wsl-new-pair > .dsh-wsl-new-linux:hover { background:var(--dsw-alias-button-primary-hover); }
-.dsh-wsl-new-pair > button:focus-visible { outline:2px solid var(--dsw-alias-label-primary); outline-offset:2px; }
+.dsh-wsl-new-bar { display:flex; gap:6px; align-items:stretch; margin:0 2px 12px; }
+.dsh-wsl-new-bar > button { display:flex; align-items:center; justify-content:center; gap:7px; min-width:0; height:38px; border:1px solid var(--dsw-alias-border-l4); border-radius:var(--dsw-radius-button,10px); font:14px var(--dsw-font-family); cursor:pointer; transition:background .12s ease; }
+.dsh-wsl-new-bar > .dsh-wsl-new-primary { flex:1 1 auto; color:var(--dsw-alias-label-primary-foreground); background:var(--dsw-alias-button-primary-fill); border-color:transparent; }
+.dsh-wsl-new-bar > .dsh-wsl-new-primary:hover { background:var(--dsw-alias-button-primary-hover); }
+.dsh-wsl-new-bar > .dsh-wsl-new-secondary { flex:0 0 auto; width:38px; padding:0; color:var(--dsw-alias-label-secondary); background:var(--dsw-alias-bg-base); }
+.dsh-wsl-new-bar > .dsh-wsl-new-secondary:hover { color:var(--dsw-alias-label-primary); }
+.dsh-wsl-new-bar.is-narrow > .dsh-wsl-new-primary span { display:none; }
+.dsh-wsl-new-bar > button:focus-visible { outline:2px solid var(--dsw-alias-label-primary); outline-offset:2px; }
+.dsh-wsl-new-secondary[hidden] { display:none; }
 .dsh-wsl-new-pair > button:hover { background:var(--dsw-alias-interactive-bg-hover); }
 .dsh-wsl-new-pair > button:disabled { opacity:.5; cursor:default; }
 .dsh-wsl-new-pair.is-narrow { flex-direction:column; }

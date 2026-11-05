@@ -161,6 +161,33 @@ export interface SlotsService {
   subscribe(name: string, listener: () => void): () => void;
 }
 
+/** One physical key combination declared for a shortcut command. */
+export interface ShortcutBinding {
+  code: string;
+  modifiers: string[];
+  secondCode?: string;
+}
+
+/**
+ * A command in the host shortcut catalog. `defaults` may be empty: the command
+ * then exists with no binding and the user can assign one, which is the only
+ * supported way to reach a shipped chord.
+ */
+export interface ShortcutCommand {
+  id: string;
+  label: () => string;
+  aliases?: string[];
+  defaults?: Record<string, ShortcutBinding | null>;
+  regions?: string[];
+  modals?: string[];
+  resolve: () => { status: 'handled'; run: () => void } | { status: 'ignored' };
+}
+
+/** Shortcut catalog service, injected as `shortcuts` by the host. */
+export interface ShortcutsService {
+  register(command: ShortcutCommand): () => void;
+}
+
 /** The plugin context available to the browser module. */
 export interface ClientContext {
   connection: ConnectionService;
@@ -169,6 +196,7 @@ export interface ClientContext {
   uiWorkspace: UiWorkspaceService;
   layout: LayoutService;
   slots: SlotsService;
+  shortcuts?: ShortcutsService;
   effect(setup: () => () => void): void;
   on(event: string, listener: () => void): () => void;
   get(name: string): unknown;

@@ -18,9 +18,10 @@
 - EN/RU/ZH-CN localized plugin UI and a generated client-only dictionary slice.
 - Protected, Trusted and Full Access plugin permission modes with form validation, grant management and expiry.
 - Unit and legacy regression tests restored and expanded.
+- **WSL-first default New Chat (source level, R04-W1):** one primary *New chat in WSL* control replaces the dual-host pair, the Windows session is an explicit secondary control, and the routing plan has no Windows branch. A `dsh-wsl-native.session.new` shortcut command exists unbound; the shipped `Ctrl+N` cannot be claimed directly (the shortcut catalog refuses the conflict), so assigning it is a documented two-step manual action.
 - `.tgz` package generation, i18n and package checks, CI on Ubuntu/Windows × Node 22/24.
 
-**Latest reported tests before this documentation batch:** 175 total, 173 passed, 2 skipped, 0 failed. Previous PR run [41990323643](https://github.com/triagmas/dsh-wsl-native/actions/runs/41990323643) succeeded. Do not report those as results for later commits without checking the new runs.
+**Latest reported tests:** 183 total, 181 passed, 2 skipped, 0 failed (after the R04-W1 routing tests). Previous PR run [41990323643](https://github.com/triagmas/dsh-wsl-native/actions/runs/41990323643) succeeded. Do not report those as results for later commits without checking the new runs.
 
 ## What has not been validated
 
@@ -37,11 +38,11 @@
 
 ## Next action
 
-**Owner's priority clarified on 2026-11-05:** [WSL-first execution](wsl-first.md), not a recurring Windows/WSL chooser. Audit official Desktop's normal New Chat / prompt route and implement the smallest supported change so agent/tool execution defaults to native Linux Harness; no silent Windows fallback. The current v0.8.0 package has not demonstrated this requirement. The R04-S1 test profile/isolation work may be reused for later approved live acceptance. The missing-Windows-Node observation in earlier reports is obsolete: owner confirmed Node.js v24.22.2 and npm 11.19.1 installed. Latest reported R04-S1 Fix.1 is commit `e976122`; do not infer real Desktop integration success from its selftests.
+**Owner's priority clarified on 2026-11-05:** [WSL-first execution](wsl-first.md), not a recurring Windows/WSL chooser. R04-W0 audited the Desktop API ([audit](r04-w0-integration-audit.md)); R04-W1 implemented the supported part ([details](r04-w1-wsl-first.md)): one primary WSL control and an unbound shortcut command. The shipped New Session button and `Ctrl+N` remain the host's and are not intercepted. The v0.8.0 package has not been loaded in the real Desktop, so this is a source-level behaviour, not accepted integration evidence. The R04-S1 test profile/isolation work may be reused for later approved live acceptance. The missing-Windows-Node observation in earlier reports is obsolete: owner confirmed Node.js v24.22.2 and npm 11.19.1 installed. Latest reported R04-S1 Fix.1 is commit `e976122`; do not infer real Desktop integration success from its selftests.
 
 ## Blockers
 
-1. **Normal Desktop New Chat → WSL native execution is not yet implemented or proven.** The optional dual-host UI does not fulfill the owner goal.
+1. **Normal Desktop New Chat → WSL native execution is implemented in source but not proven live, and the shipped control/shortcut stay Windows-owned.** The plugin's primary control is WSL-first; making DSH's own button and `Ctrl+N` WSL-first needs the upstream seat described in the audit.
 2. **Real integration evidence missing** (not a dependency on Hyper-V or a new Windows installation).
 3. **English repository language gate not complete** until legacy Chinese text throughout maintained docs/source comments is handled.
 4. **Owner's explicit authorization** still required for any local Desktop launch/install and for merge.

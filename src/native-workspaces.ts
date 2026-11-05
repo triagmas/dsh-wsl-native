@@ -52,7 +52,8 @@ export interface SidebarModel {
   conversations: {
     setUnified(value: boolean): void;
     requestWorkspace(): void;
-    newWindows(workspaceId?: string): Promise<void>;
+    createWindows(workspaceId?: string): Promise<void>;
+    createLinux(): Promise<void>;
     newLinux(entry?: { settings: { distro: string }; ready?: boolean }): Promise<void>;
     entries: ReadonlyMap<string, { settings: { distro: string }; ready?: boolean }>;
     activeKey: string | null;
@@ -117,24 +118,23 @@ export function installNativeWorkspaces(ctx: ClientContext, model: SidebarModel)
   add.append(addMark);
   add.dataset[OWNED_ATTR] = '';
   const pair = doc.createElement('div');
-  pair.className = 'dsh-wsl-new-pair';
+  pair.className = 'dsh-wsl-new-bar';
   pair.dataset[OWNED_ATTR] = '';
-  const win = button(ct('client.newWindows'), 'dsh-wsl-new-windows', 'M3 4h18v13H3zM8 21h8m-4-4v4', () => {
-    void model.conversations.newWindows();
+  // One primary action: the default New Chat is always the WSL runtime.
+  const linux = button(ct('client.newWslChat'), 'dsh-wsl-new-primary', 'M3 5h18v14H3zM7 9l3 3-3 3m6 0h4', () => {
+    void model.conversations.createLinux();
   });
-  const linux = button(ct('client.newLinux'), 'dsh-wsl-new-linux', 'M3 5h18v14H3zM7 9l3 3-3 3m6 0h4', () => {
-    const active = model.conversations.activeKey;
-    void model.conversations.newLinux(active ? model.conversations.entries.get(active) : undefined);
+  linux.title = ct('client.newWslChatHint');
+  // The Windows runtime keeps its own control; it is never the default and the
+  // primary action cannot reach it.
+  const win = button(ct('client.newWindowsExplicit'), 'dsh-wsl-new-secondary', 'M3 4h18v13H3zM8 21h8m-4-4v4', () => {
+    void model.conversations.createWindows();
   });
-  for (const [node, label] of [
-    [win, 'Windows'],
-    [linux, 'WSL'],
-  ] as const) {
-    const span = doc.createElement('span');
-    span.textContent = label;
-    node.append(span);
-  }
-  pair.append(win, linux);
+  win.title = ct('client.newWindowsExplicitHint');
+  const label = doc.createElement('span');
+  label.textContent = ct('client.newWslChat');
+  linux.append(label);
+  pair.append(linux, win);
   const marks = new Set<HTMLElement>();
 
   function sync(): void {
@@ -163,7 +163,9 @@ export function installNativeWorkspaces(ctx: ClientContext, model: SidebarModel)
       }
       nativeButton.setAttribute('data-dsh-wsl-replaced', '');
       if (pair.previousElementSibling !== nativeButton) nativeButton.after(pair);
-      pair.classList.toggle('is-narrow', (nativeButton.parentElement?.getBoundingClientRect().width ?? 999) < 160);
+      const header2 = nativeButton.parentElement;
+      pair.classList.toggle('is-narrow', (header2?.getBoundingClientRect().width ?? 999) < 200);
+      win.hidden = (header2?.getBoundingClientRect().width ?? 999) < 160;
     }
     linux.setAttribute('aria-busy', String(model.conversations.busy));
     const header = sidebar.querySelector<HTMLElement>('[class*="sectionHeader"]');

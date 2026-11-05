@@ -7,6 +7,7 @@ import type { PanelModel } from './panel-types.js';
 import { installConversationSlots } from './conversations.js';
 import { ct, setClientLocale } from './i18n/client.js';
 import type { ClientContext, ClientModel, HarnessResult, PanelApi } from './client-types.js';
+import { NEW_WSL_CHAT_ALIASES, NEW_WSL_CHAT_SHORTCUT_ID } from './new-chat.js';
 
 
 export const name = 'dsh-wsl-native-client';
@@ -47,6 +48,29 @@ export function apply(ctx: PanelContext): void {
       <WslPage api={api} ctx={ctx} model={model} />
     )),
   );
+  // One command, no default chord: the shipped Ctrl+N belongs to the host's own
+  // New Session command and the catalog rejects a second claim on it. The user
+  // can clear that binding and assign this one; see docs/r04-w1-wsl-first.md.
+  ctx.inject(['shortcuts'], (shortcutsCtx) => {
+    const shortcuts = shortcutsCtx.shortcuts;
+    if (!shortcuts) return;
+    shortcutsCtx.effect(() =>
+        shortcuts.register({
+          id: NEW_WSL_CHAT_SHORTCUT_ID,
+          label: () => ct('client.newWslChat'),
+          aliases: [...NEW_WSL_CHAT_ALIASES],
+          defaults: {},
+          regions: ['page', 'editable'],
+          modals: [],
+          resolve: () => ({
+            status: 'handled',
+            run: () => {
+              void model.conversations?.createLinux();
+            },
+          }),
+        }),
+    );
+  });
   ctx.slots.inject('sidebar.panellist', () =>
     ctx.slots.register(
       {

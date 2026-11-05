@@ -2,6 +2,7 @@ import { stored } from './client-session.js';
 import type { CatalogRow } from './client-types.js';
 import { startSession } from './workspace-session.js';
 import { createConnectionRecovery, type RecoveryState } from './connection-recovery.js';
+import { planNewChat } from './new-chat.js';
 import { createWorkHandoff } from './work-handoff.js';
 import { readHandoff, appOrigin, DESKTOP_ORIGIN, type Handoff } from './handoff.js';
 import {
@@ -116,6 +117,10 @@ export interface ConversationModel {
   desktopError(entry: ConversationEntry, error: Error): void;
   newWindows(workspaceId?: string): Promise<void>;
   newLinux(entry?: ConversationEntry): Promise<void>;
+  /** Default New Chat: the WSL runtime or a visible error, never Windows. */
+  createLinux(): Promise<void>;
+  /** Explicit Windows mode, reachable only through its own control. */
+  createWindows(workspaceId?: string): Promise<void>;
   action(row: ConversationRow, action: string): Promise<void>;
   toggleChrome(entry: ConversationEntry): void;
   closeView(entry: ConversationEntry): void;
@@ -387,6 +392,23 @@ export function createConversations(
         { ...settings, directory: selected?.cwd ?? settings.directory },
         { create: true },
       );
+    },
+    async createLinux() {
+      const plan = planNewChat({
+        settings: model.state?.settings ?? null,
+        entries,
+        activeKey: chat.activeKey,
+      });
+      if (plan.kind === 'error') {
+        chat.error = plan.message;
+        ctx.layout.selectPanel('dsh-wsl-native');
+        model.emit();
+        return;
+      }
+      await chat.newLinux(plan.entry);
+    },
+    async createWindows(workspaceId) {
+      await chat.newWindows(workspaceId);
     },
     async action(row, action) {
       chat.error = null;
