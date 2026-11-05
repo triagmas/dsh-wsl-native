@@ -1,0 +1,14 @@
+{
+  "printWidth": 110,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "semi": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": "*.{json,yml,yaml}",
+      "options": { "printWidth": 120 }
+    }
+  ]
+}

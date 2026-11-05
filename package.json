@@ -1,22 +1,29 @@
 {
   "name": "dsh-wsl-native",
-  "version": "0.7.0",
-  "description": "DSH for WSL: Windows and WSL hosts, resident stdio bridges, native Linux launch and Windows interoperability",
+  "version": "0.8.0",
+  "description": "DSH for WSL: Windows and WSL hosts, resident stdio bridges, native Linux launch and governed Windows interoperability",
   "type": "module",
-  "main": "src/index.mjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./src/index.mjs",
-    "./client": "./lib/client.js",
-    "./service": "./src/service.mjs",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "default": "./dist/client.js"
+    },
+    "./service": {
+      "types": "./dist/service.d.ts",
+      "default": "./dist/service.js"
+    },
     "./package.json": "./package.json"
   },
   "bin": {
-    "dsh-wsl": "bin/dsh-wsl.mjs"
+    "dsh-wsl": "dist/cli.js"
   },
   "files": [
-    "src",
-    "lib",
-    "bin",
+    "dist",
     "cordis.patch.yml",
     "README.md",
     "docs",
@@ -25,14 +32,20 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test test/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "check": "npm run typecheck && npm run lint && npm run i18n:check",
+    "test": "node scripts/test.mjs",
     "test:wsl": "node scripts/wsl-smoke.mjs",
     "test:host": "node scripts/host-smoke.mjs",
     "test:native": "node scripts/native-host-smoke.mjs",
     "test:inheritance": "node scripts/inheritance-smoke.mjs",
     "bench:wsl": "node scripts/benchmark.mjs",
-    "check": "node scripts/check.mjs",
-    "test:package": "node scripts/package-smoke.mjs"
+    "test:package": "node scripts/package-smoke.mjs",
+    "prepack": "npm run build"
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
@@ -55,11 +68,30 @@
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-tools": "0.2.0-rc.2"
+    "@deepseek-ai/dsh-tools": ">=0.2.0-rc.2 <0.3.0"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-api-session-controller": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-api-workspace-controller": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-connection": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-locale": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-store": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-ui-layout": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-ui-renderer": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-ui-sidebar": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-ui-workspace": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.5",
+    "@eslint/js": "^9.24.0",
+    "@types/node": "^22.15.0",
+    "@types/react": "^18.3.20",
     "esbuild": "^0.25.0",
+    "eslint": "^9.24.0",
+    "prettier": "^3.5.3",
+    "react": "^18.3.1",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.29.0",
     "yaml": "2.9.1"
   },
   "keywords": [
@@ -67,15 +99,16 @@
     "deepseek-harness",
     "wsl",
     "windows",
-    "interop"
+    "interop",
+    "typescript"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Han-1413141/dsh-wsl-native.git"
+    "url": "https://github.com/triagmas/dsh-wsl-native.git"
   },
-  "homepage": "https://github.com/Han-1413141/dsh-wsl-native#readme",
+  "homepage": "https://github.com/triagmas/dsh-wsl-native#readme",
   "bugs": {
-    "url": "https://github.com/Han-1413141/dsh-wsl-native/issues"
+    "url": "https://github.com/triagmas/dsh-wsl-native/issues"
   }
 }

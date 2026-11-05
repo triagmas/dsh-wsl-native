@@ -1,0 +1,311 @@
+import type { MessageKey } from './en.js';
+
+/** Russian dictionary (`ru`) — the primary language for this fork. */
+export const ru: Record<MessageKey, string> = {
+  'errors.text': '{name} должен быть непустой строкой без символов NUL.',
+  'errors.integer': '{name} должен быть целым числом от {min} до {max}.',
+  'errors.aborted': 'Операция отменена.',
+  'errors.crossOsPermission':
+    '{reason} Операция выходит за границы текущей системы, поэтому требует полного доступа или разового подтверждения.',
+  'errors.notApproved': 'Доступ к другой системе не был подтверждён.',
+  'errors.forbiddenValue': 'Значение {name} недопустимо.',
+
+  'rpc.frameTooLarge': 'Кадр RPC превышает предельный размер.',
+  'rpc.invalidFrame': 'Некорректный кадр RPC: {error}',
+  'rpc.connectionClosed': 'Соединение закрыто.',
+  'rpc.backpressure': 'Очередь записи соединения заполнена.',
+  'rpc.startTimeout': 'Мост не запустился вовремя. Проверьте WSL и Node.js в Linux.',
+  'rpc.protocolMismatch': 'Версия протокола моста не совпадает.',
+  'rpc.cancelTimeout': 'Рабочий процесс не отменил запрос вовремя, соединение закрыто.',
+  'rpc.invalidResponse': 'В ответе RPC отсутствует id.',
+  'rpc.busy': 'В этом соединении уже 32 незавершённых запроса.',
+  'rpc.unknownMethod': 'Неизвестный метод моста.',
+  'rpc.duplicateId': 'Повторяющийся id RPC.',
+  'rpc.invalidRequest': 'Некорректный запрос RPC.',
+  'rpc.tooManyRequests': 'Одновременно выполняется больше 16 запросов.',
+  'rpc.bridgeExited': 'Мост завершился. {stderr}',
+
+  'paths.linuxAbsolute': 'Нужен абсолютный путь Linux, например /home/user/project.',
+  'paths.windowsAbsolute':
+    'Нужен абсолютный путь с буквой диска или UNC-путь WSL; C:relative не принимается.',
+  'paths.invalidDistro': 'Недопустимое имя дистрибутива.',
+  'paths.distroMismatch': 'Путь относится к другому дистрибутиву, отличному от выбранного.',
+  'paths.unrepresentable':
+    'Это имя файла Linux нельзя представить UNC-путём Windows. Используйте файловые инструменты WSL.',
+
+  'encoding.limitTooSmall': 'Предел не вмещает один полный символ; используйте не менее 4 байт.',
+  'encoding.invalid':
+    'Кодировка текста или смещение недопустимы. Укажите реальную кодировку либо читайте двоичные данные как base64.',
+
+  'process.argsArray': 'args должен быть массивом строк.',
+  'process.commandTooLong':
+    'Команда PowerShell превышает предел командной строки Windows. Выполните её из файла сценария.',
+
+  'worker.absolutePath': 'Нужен абсолютный путь текущей операционной системы.',
+  'worker.invalidWindowsPath': 'Пути устройств и альтернативные потоки NTFS не поддерживаются.',
+  'worker.notFile': 'Читать можно только обычные файлы.',
+  'worker.targetNotFile': 'Цель должна быть обычным файлом.',
+  'worker.danglingSymlink': 'Цель — нерабочая символическая ссылка.',
+  'worker.expectedHash': 'expectedHash должен быть SHA-256 или "absent".',
+  'worker.fileConflict': 'Целевой файл изменился и не был перезаписан. Прочитайте его снова и повторите.',
+  'worker.targetBusy': 'Целевой файл уже записывается.',
+  'worker.transferMissing': 'Передача не существует или завершается.',
+  'worker.transferWriting': 'Передача не существует или уже записывается.',
+  'worker.transferLimit': 'Открыто больше 8 передач файлов.',
+  'worker.offsetMismatch': 'Смещение блока файла не является непрерывным.',
+  'worker.invalidChunk': 'Блок файла должен быть корректным Base64 размером до 256 KiB.',
+  'worker.sizeLimit': 'Одна операция копирования ограничена 1 GiB.',
+  'worker.writeFailed': 'Запись файла не продвинулась.',
+  'worker.hashMismatch': 'Проверка файла не прошла; цель не была заменена.',
+  'worker.commandOrExecutable': 'Укажите ровно одно из полей: command или executable.',
+  'worker.invalidEnv': 'env должен быть объектом не более чем из 64 корректных переменных.',
+  'worker.wrongHost': 'Эта операция должна выполняться в рабочем процессе Windows.',
+  'worker.invalidUrl': 'URL не должен содержать учётные данные.',
+  'worker.clipboardFailed': 'Операция с буфером обмена не удалась: {error}',
+  'worker.clipboardLimit': 'Текст буфера обмена ограничен 256 KiB.',
+  'worker.leaseBusy': 'Другой запускатор уже использует это окружение: {file}.',
+  'worker.directoryName': 'Недопустимое имя папки.',
+  'worker.directoryIsFile': 'Путь указывает на файл; выберите папку.',
+  'worker.pathConversionFailed': 'Преобразование wslpath не удалось: {error}',
+  'worker.invalidEncoding': 'encoding должен быть utf8, gb18030 или base64.',
+  'worker.writeLimit': 'Текстовая запись ограничена 512 KiB.',
+  'worker.jobLimit': 'Уже отслеживается 32 фоновых задачи; удалите завершённые и повторите.',
+  'worker.jobNotFound': 'Задача не существует; соединение могло быть пересоздано.',
+  'worker.jobRunning': 'Удалять можно только завершённые задачи.',
+  'worker.unknownWindowsAction': 'Неизвестное действие Windows.',
+  'worker.permissionDenied': 'Политика плагина отклонила операцию: {reason}',
+
+  'connector.notWsl': 'Текущий Linux — не WSL; подключите дистрибутив из Windows.',
+  'connector.userMismatch':
+    'Хост WSL может работать только со своим пользователем Linux; для смены пользователя подключайтесь из Windows.',
+  'connector.wrongHost': 'Междистрибутивные подключения запускаются с хоста Windows.',
+  'connector.invalidTarget': 'target должен быть windows, wsl или local.',
+  'connector.invalidUser': 'Недопустимое имя пользователя Linux.',
+  'connector.wrongRuntimeWsl': 'WSL node на самом деле указывает на Windows; настройте Linux node.',
+  'connector.wrongRuntimeWindows': 'windowsNode должен указывать на Windows node.exe.',
+  'connector.poolFull': 'Уже подключено 8 целей; сначала отключите неиспользуемое соединение.',
+  'connector.pluginStopped': 'Плагин остановлен.',
+  'connector.linuxNodeMissing':
+    'В WSL отсутствует Node.js. Установите Node.js 22.19+ или 24+, либо настройте linuxNode.',
+
+  'service.settingsUnreadable': 'Файл настроек не читается: {error}',
+  'service.invalidUser': 'Недопустимое имя пользователя Linux.',
+  'service.distroNotFound': 'Выбранный дистрибутив не установлен.',
+  'service.noDistro': 'Нет доступных дистрибутивов WSL. Установите или выберите дистрибутив.',
+  'service.invalidTarget': 'target должен быть wsl или windows.',
+  'service.invalidDirection': 'direction должен быть linux или windows.',
+  'service.invalidFileOperation': 'operation должен быть read, write, list или stat.',
+  'service.unknownJobAction': 'Неизвестная операция с задачей.',
+  'service.jobEnvironmentMismatch':
+    'Задача относится к другому окружению; используйте target, distro и user, которые она вернула.',
+  'service.fileTooLarge': 'Предел копирования файла — 1 GiB.',
+  'service.sourceChanged': 'Исходный файл изменился во время копирования, операция отменена.',
+  'service.invalidCopyTargets': 'Обе стороны копирования должны быть windows или wsl.',
+  'service.preferenceBoolean': 'Значение настройки должно быть логическим.',
+
+  'launcher.nodeVersion': 'Linux DSH требует Node.js 22.19+ из линии 22.x либо 24+.',
+  'launcher.setupBusy': 'Подготовка окружения уже выполняется.',
+  'launcher.invalidInstallNetwork': 'installNetwork должен быть auto, windows или linux.',
+  'launcher.npmCacheRequired':
+    'Для загрузки через Windows нужен хост Windows и доступный кеш npm.',
+  'launcher.setupFailed': 'Подготовка окружения не удалась: {error}',
+  'launcher.invalidNativeRoot': 'Каталог установки в Linux должен быть абсолютным путём.',
+  'launcher.alreadyRunning': 'Этот запускатор уже запустил DSH для другого дистрибутива; сначала остановите его.',
+  'launcher.setupRequired': 'Linux DSH ещё не установлен. Выполните dsh-wsl setup --distro {distro}',
+  'launcher.invalidPort': 'Порт должен быть 0–65535; 0 выбирает свободный порт.',
+  'launcher.patchMissing': 'Конфигурация запуска плагина отсутствует; повторите dsh-wsl setup.',
+  'launcher.dshExited': 'DSH завершился во время запуска.',
+  'launcher.dshStartTimeout': 'DSH не запустился за 180 секунд.',
+  'launcher.localhostUnreachable':
+    'Linux DSH запустился, но переадресация localhost в Windows недоступна. Запустите dsh-wsl doctor; плагин не меняет брандмауэр и сетевые настройки WSL.',
+  'launcher.invalidUrl': 'DSH вернул не локальный адрес.',
+  'launcher.installTaskFailed': 'Задача установки завершилась со статусом {status}.',
+  'launcher.progress.copying': 'Копирование плагина в файловую систему Linux.',
+  'launcher.progress.downloading': 'Загрузка пакетов Linux через Windows.',
+  'launcher.progress.installing': 'Установка Linux DSH {version} в {runtime}.',
+  'launcher.progress.ready': 'Linux DSH и плагин установлены.',
+
+  'install.unsupportedArch': 'Установка в Linux поддерживает только x64 и arm64.',
+  'install.npmFailed': 'Загрузка через npm в Windows не удалась: {error}',
+  'install.invalidSource': 'Файл блокировки зависимостей содержит источник пакета без HTTPS.',
+
+  'inherit.yamlInvalid':
+    'Конфигурация содержит YAML, который нельзя наследовать; исходный файл не изменён.',
+  'inherit.invalidOption': 'Параметры наследования — это переключатели плагинов, конфигурации или аккаунтов моделей.',
+  'inherit.pluginName': 'Недопустимое имя пакета плагина.',
+  'inherit.pluginMismatch': 'Имя пакета плагина не совпадает с каталогом установки.',
+  'inherit.failed': 'Операция с конфигурацией Linux не удалась: {error}',
+  'inherit.configTooLarge': 'Файл конфигурации превышает 256 KiB.',
+  'inherit.invalidLayer': 'Конфигурация Cordis должна быть списком.',
+  'inherit.missingPluginRecord': 'Отсутствует запись установки плагина {name}.',
+  'inherit.packFailed': 'Не удалось подготовить плагин {name} к передаче.',
+  'inherit.packName': 'Недопустимое имя файла пакета плагина.',
+  'inherit.windowsCache': 'Не удалось прочитать кеш npm в Windows.',
+  'inherit.progress.merge':
+    'Наследуются плагины и конфигурация основной среды; отдельные настройки Linux сохраняются.',
+  'inherit.progress.install': 'Установка зависимостей наследуемых плагинов в Linux.',
+
+  'handoff.invalidLocalUrl': 'DSH не вернул корректный локальный адрес.',
+  'handoff.invalidTarget': 'Не удалось проверить цель локального диалога; войдите в Linux заново.',
+
+  'routes.contentType': 'Требуется application/json.',
+  'routes.bodyTooLarge': 'Тело запроса слишком велико.',
+  'routes.invalidJson': 'JSON запроса некорректен.',
+  'routes.invalidJsonBody': 'Требуется объект JSON.',
+  'routes.forbidden': 'Принимаются только локальные запросы с того же источника.',
+  'routes.authRequired': 'Сначала войдите по ссылке запуска DSH.',
+  'routes.notFound': 'Интерфейс не найден.',
+  'routes.handoffInvalid': 'Ссылка перехода истекла или недействительна; войдите снова из панели Windows.',
+  'routes.requestObject': 'Запрос должен быть объектом размером до 16 KiB.',
+  'routes.rpcFormat': 'Формат RPC-запроса недопустим.',
+  'routes.unsupportedHost': 'Входите в окружение Linux из DSH в Windows.',
+  'routes.invalidOrigin': 'Адрес возврата должен принадлежать этому локальному DSH.',
+  'routes.startBusy': 'Это окружение уже запускается; дождитесь завершения.',
+  'routes.setupBusy': 'Окружение подготавливается; измените параметры наследования позже.',
+  'routes.stopBeforePrepare': 'Остановите этот Linux DSH перед подготовкой окружения.',
+  'routes.refreshPanel': 'Обновите панель и повторите попытку.',
+  'routes.inheritanceBusy': 'Окружение подготавливается; измените параметры наследования позже.',
+
+  'tools.status.description':
+    'Показать состояние двух хостов Windows/WSL, дистрибутивы и подключённые процессы. Дистрибутив не запускается.',
+  'tools.exec.description':
+    'Выполнить команду в выбранной системе: wsl использует bash Linux, windows — PowerShell, либо передайте executable+args как есть. Каждая команда независима; cwd и env задаются явно, состояние оболочки не разделяется. Соединения переиспользуются. В режиме Protected требуется подтверждение каждый раз.',
+  'tools.files.description':
+    'Показать, прочитать, записать файл или вычислить SHA-256 напрямую в системе, которой он принадлежит, без файловых инструментов Windows 9P. Запись сохраняет символические ссылки и атомарно заменяет реальную цель; родительский каталог должен существовать. offset/limit — смещения в байтах. Для двоичных файлов используйте wsl_native_copy.',
+  'tools.copy.description':
+    'Скопировать один файл между Windows и WSL блоками (до 1 GiB), проверить SHA-256 передачи и атомарно зафиксировать. Существующие файлы по умолчанию не перезаписываются. Прерванная передача удаляет свой временный файл и не повторяется автоматически.',
+  'tools.path.description':
+    'Преобразовать пути Windows и Linux с помощью wslpath выбранного дистрибутива, определяя нестандартные точки монтирования и несовпадения дистрибутивов.',
+  'tools.windows.description':
+    'Открыть файл, каталог или ссылку http/https в Windows, прочитать или записать текстовый буфер обмена. Чтение буфера обмена также требует межсистемного разрешения.',
+  'tools.job.description':
+    'Запустить, проверить, отменить или забыть межсистемную фоновую задачу. Задача принадлежит соединению, которое её запустило, и завершается при выходе или отключении плагина. id задачи нужно использовать с исходными target и distro.',
+  'tools.param.target': 'Целевая система; по умолчанию wsl.',
+  'tools.param.distro': 'Дистрибутив WSL; по умолчанию выбранный в панели.',
+  'tools.param.user': 'Пользователь Linux; по умолчанию сохранённый для этого окружения. Используйте пользователя, возвращённого межсистемной задачей.',
+  'tools.param.command': 'Сценарий оболочки, альтернатива executable.',
+  'tools.param.executable': 'Программа для прямого запуска, альтернатива command.',
+  'tools.param.args': 'Аргументы программы, передаются без изменений.',
+  'tools.param.cwd': 'Абсолютный рабочий каталог; принимаются пути Linux, Windows и WSL UNC.',
+  'tools.param.env': 'Переменные окружения только для этой команды.',
+  'tools.param.timeoutMs': 'Таймаут в миллисекундах; по умолчанию 120000, максимум для переднего плана 600000.',
+  'tools.param.operation': 'Файловая операция.',
+  'tools.param.path': 'Абсолютный путь файла или каталога.',
+  'tools.param.content': 'Полное содержимое UTF-8 для write.',
+  'tools.param.expectedHash': 'Проверить предыдущий SHA-256 перед записью; "absent" для нового файла; пропустите, чтобы разрешить перезапись.',
+  'tools.param.encoding': 'Кодировка текста или base64.',
+  'tools.param.offset': 'Смещение в байтах для read; смещение страницы для list.',
+  'tools.param.limit': 'Максимум возвращаемых байтов или записей.',
+  'tools.param.hidden': 'Включать скрытые записи при выводе списка.',
+  'tools.param.hash': 'Вычислить SHA-256 при operation=stat.',
+  'tools.param.from': 'Исходная система.',
+  'tools.param.to': 'Целевая система.',
+  'tools.param.source': 'Абсолютный путь исходного файла.',
+  'tools.param.destination': 'Абсолютный путь целевого файла; родительский каталог должен существовать.',
+  'tools.param.direction': 'Направление преобразования.',
+  'tools.param.action': 'Выполняемое действие.',
+  'tools.param.text': 'Текст буфера обмена; может быть пустым.',
+  'tools.param.jobId': 'Идентификатор существующей задачи.',
+  'tools.param.jobTimeout': 'Максимальное время в миллисекундах; не более 86400000 (24 часа).',
+  'tools.error.execTimeoutLimit': 'Таймаут переднего плана не более 600000 мс; для длинных задач используйте wsl_native_job.',
+  'tools.error.jobTimeoutPositive': 'Фоновой задаче нужен положительный таймаут.',
+
+  'permissions.mode.protected': 'Protected',
+  'permissions.mode.protected.description':
+    'Строгая проверка операций Windows. Неизвестные и потенциально опасные действия требуют подтверждения.',
+  'permissions.mode.trusted': 'Trusted',
+  'permissions.mode.trusted.description':
+    'Вы разрешаете определённые операции в определённых областях на выбранный срок. Подходящие операции больше не спрашиваются.',
+  'permissions.mode.fullAccess': 'Full Access',
+  'permissions.mode.fullAccess.description':
+    'Полный доступ в рамках прав пользователя Windows. Включается только явным действием и допускает случайное повреждение файлов.',
+  'permissions.reason.exec': 'Выполнить команду {target} с правами текущего пользователя.',
+  'permissions.reason.write': 'Записать файл {path} в системе {target}.',
+  'permissions.reason.copy': 'Скопировать {source} в {destination}.',
+  'permissions.reason.windows': 'Операция Windows: {action}.',
+  'permissions.reason.job': 'Управление фоновой задачей {target}: {action}.',
+  'permissions.denied.stateFile':
+    'Файлы конфигурации и состояния плагина нельзя изменять через инструменты; используйте панель.',
+  'permissions.denied.systemPath': 'Защищённые системные расположения нельзя изменять через инструменты: {path}.',
+  'permissions.denied.outsideRoots':
+    'Путь вне разрешённых корней; подтвердите операцию или добавьте разрешение в панели: {path}.',
+  'permissions.denied.symlink':
+    'Разрешённый путь выходит за пределы разрешённых корней через символическую ссылку: {path}.',
+  'permissions.denied.unknownMode': 'Неизвестный режим разрешений: {mode}.',
+  'permissions.denied.agentSwitch':
+    'Режим разрешений может изменить только пользователь в панели, но не вызов инструмента.',
+  'permissions.denied.untrustedGrant': 'Разрешение может быть создано только явным действием пользователя.',
+  'permissions.grant.expired': 'Срок этого разрешения истёк.',
+  'permissions.fullAccess.confirm':
+    'Для включения Full Access пользователь должен ввести подтверждающую фразу явно.',
+  'permissions.fullAccess.warning':
+    'Full Access позволяет агентам изменить всё, что может изменить ваш пользователь Windows, включая файлы вне проекта. Песочницы и подтверждений по вызовам нет.',
+  'permissions.notice.protected':
+    'Активен режим Protected. Команды Windows и запись файлов требуют подтверждения.',
+  'permissions.notice.trusted':
+    'Активен режим Trusted. Без вопросов выполняются только операции внутри ваших разрешений.',
+  'permissions.notice.fullAccess':
+    'Активен режим Full Access. Все операции выполняются с полными правами пользователя Windows.',
+
+  'permissions.toolDescription.hint': 'Текущий режим разрешений плагина: {mode}.',
+
+  'cli.extraArguments': 'Лишние аргументы. Запустите dsh-wsl --help для справки.',
+  'cli.unknownCommand': 'Неизвестная команда {command}. Запустите dsh-wsl --help для справки.',
+  'cli.started': 'Linux DSH запущен: {url}\nНажмите Ctrl+C, чтобы остановить этот экземпляр.',
+  'cli.stopped': 'Linux DSH завершился: {status}. {stderr}',
+  'cli.permissionMode': 'Режим разрешений: {mode}',
+  'cli.noGrants': 'Постоянных разрешений нет.',
+  'cli.grantLine': '{capability} для {target} в {root}, {expiry}',
+  'cli.grantAdded': 'Разрешение создано: {id}',
+  'cli.grantRevoked': 'Разрешение отозвано.',
+  'cli.help': `DSH для WSL · dsh-wsl-native {version}
+
+  dsh-wsl list                               список дистрибутивов
+  dsh-wsl doctor [--distro Ubuntu]           проверка мостов Linux и Windows
+  dsh-wsl exec --command "uname -a"          выполнить команду Linux
+  dsh-wsl exec --target windows --command …  выполнить PowerShell Windows
+  dsh-wsl path --path "C:\\Work" --direction linux
+  dsh-wsl setup --distro Ubuntu              установить отдельный Linux DSH и плагин
+  dsh-wsl start --distro Ubuntu --cwd /home/user/project
+                                             запустить Linux DSH; Ctrl+C останавливает
+  dsh-wsl permissions                        показать режим разрешений и разрешения
+  dsh-wsl permissions --mode protected|trusted|full-access --confirm "FULL ACCESS"
+                                             сменить режим (только действие пользователя)
+
+Параметры: --distro ИМЯ  --user ПОЛЬЗОВАТЕЛЬ  --cwd КАТАЛОГ  --port 0
+         --linux-node ПУТЬ  --windows-node ПУТЬ_К_NODE_EXE
+         --install-network auto|windows|linux  --npm-cache АБСОЛЮТНЫЙ_ПУТЬ
+         --timeout 120000  --no-open  --json  --locale en|ru|zh-CN
+
+DSH в Windows: dsh plugin --profile web add <абсолютный путь к плагину>
+DSH в WSL: тот же пакет и та же команда установки.
+`,
+
+  'ui.permissions.title': 'Разрешения Windows',
+  'ui.permissions.mode': 'Режим',
+  'ui.permissions.grants': 'Постоянные разрешения',
+  'ui.permissions.noGrants': 'Постоянных разрешений нет. В режиме Trusted каждый запрос спрашивается, пока вы не добавите область.',
+  'ui.permissions.addGrant': 'Разрешить область',
+  'ui.permissions.grantCapability': 'Возможность',
+  'ui.permissions.grantTarget': 'Целевая система',
+  'ui.permissions.grantRoot': 'Корневой путь',
+  'ui.permissions.grantHours': 'Действует (часов)',
+  'ui.permissions.grantCreate': 'Создать разрешение',
+  'ui.permissions.grantRevoke': 'Отозвать',
+  'ui.permissions.fullAccessWarning': 'В режиме Full Access нет песочницы и подтверждений по вызовам.',
+  'ui.permissions.confirmFullAccess': 'Введите FULL ACCESS для подтверждения',
+  'ui.permissions.confirmPhrase': 'Подтверждающая фраза',
+  'ui.permissions.switchMode': 'Применить режим',
+  'ui.permissions.modeChanged': 'Режим разрешений: {mode}.',
+  'ui.permissions.grantCreated': 'Разрешение добавлено: {capability} в {root}.',
+  'ui.permissions.grantRemoved': 'Разрешение отозвано.',
+  'ui.permissions.readOnlyNotice': 'Режим меняет только пользователь; агенты не могут вызвать этот интерфейс.',
+  'ui.permissions.capability.exec': 'Выполнение команд',
+  'ui.permissions.capability.write': 'Запись файлов',
+  'ui.permissions.capability.copy': 'Копирование файлов',
+  'ui.permissions.capability.windows': 'Оболочка Windows',
+  'ui.permissions.capability.job': 'Фоновые задачи',
+  'ui.permissions.expires': 'Истекает {time}',
+  'ui.permissions.neverExpires': 'Без срока',
+  'ui.permissions.error': 'Не удалось изменить разрешения: {error}',
+};
