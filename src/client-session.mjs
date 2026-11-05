@@ -1,7 +1,7 @@
-import { appOrigin, readHandoff } from "./handoff.mjs";
-import { openWorkspace } from './workspace-session.mjs';
-import { readEmbed } from "./conversation-protocol.mjs";
-import { startConversationGuest } from "./conversation-guest.mjs";
+import { appOrigin, readHandoff } from "./handoff.js";
+import { openWorkspace } from './workspace-session.js';
+import { readEmbed } from "./conversation-protocol.js";
+import { startConversationGuest } from "./conversation-guest.js";
 
 const PREFIX = "dsh-wsl-native:";
 export function stored(key, value, storage = sessionStorage) {

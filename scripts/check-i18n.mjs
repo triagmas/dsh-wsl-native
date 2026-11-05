@@ -2,6 +2,7 @@
 // placeholders. The dictionaries are TypeScript, so this script bundles the
 // real module with esbuild and inspects it at runtime — the same code path the
 // plugin uses.
+import { generate } from './build-client-dict.mjs';
 import { build } from 'esbuild';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -43,6 +44,18 @@ try {
       failed = true;
       console.error(`[i18n] ${locale}: unknown keys ${extra.join(', ')}`);
     }
+  }
+  // The browser slice must be regenerated whenever the dictionaries change.
+  const generated = path.join(root, 'src', 'i18n', 'client-strings.ts');
+  const [current, expected] = await Promise.all([
+    fs.readFile(generated, 'utf8').catch(() => ''),
+    generate(),
+  ]);
+  if (current !== expected) {
+    failed = true;
+    console.error('[i18n] src/i18n/client-strings.ts is stale — run `npm run i18n:build`.');
+  } else {
+    console.log('[i18n] client dictionary slice is current.');
   }
   if (failed) process.exitCode = 1;
   else console.log(`[i18n] ${LOCALES.length} locales, ${englishKeys.length} keys each.`);

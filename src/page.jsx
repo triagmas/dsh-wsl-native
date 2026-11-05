@@ -18,7 +18,7 @@ import {
   normalized,
   directoryError,
 } from "./components.jsx";
-import { appOrigin, parentUrl } from "./handoff.mjs";
+import { appOrigin, parentUrl } from "./handoff.js";
 import { openProject } from "./client-session.mjs";
 import { InheritanceSection } from "./inheritance-ui.jsx";
 

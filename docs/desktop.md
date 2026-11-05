@@ -1,10 +1,10 @@
 # Windows 桌面端安装与使用
 
-`dsh-wsl-native` 0.7.0 让 Windows DSH 和 WSL 中完整的 Linux DSH 共用一个桌面窗口、一个对话列表。WSL 对话带 `WSL` 标志；点击不同对话即可切换。Windows 对话继续使用 Windows，WSL 对话使用 Linux 原生 Bash、文件系统与工作区。
+`dsh-wsl-native` 0.8.0 让 Windows DSH 和 WSL 中完整的 Linux DSH 共用一个桌面窗口、一个对话列表。WSL 对话带 `WSL` 标志；点击不同对话即可切换。Windows 对话继续使用 Windows，WSL 对话使用 Linux 原生 Bash、文件系统与工作区。
 
 ## 安装条件
 
-- Windows 上已安装 **DeepSeek Harness Desktop 0.2.0-rc.2**，至少打开过一次以生成 `desktop` 配置。
+- Windows 上已安装 **DeepSeek Harness Desktop 0.2.1-rc.5**，至少打开过一次以生成 `desktop` 配置。
 - 已安装 WSL 2 发行版。本项目实测使用 Ubuntu x64。
 - Linux Node.js 为 22.x 的 `22.19+` 或 `24+`，且是 Linux 可执行文件；Linux npm 可用。
 - Windows Node.js、npm 可用。桌面端自身使用随应用提供的 Electron Node 运行时；默认依赖下载通过 Windows npm 完成。
@@ -13,13 +13,13 @@
 
 ## 下载与安装
 
-从 [GitHub Releases](https://github.com/Han-1413141/dsh-wsl-native/releases/latest) 下载 `dsh-wsl-native-0.7.0.tgz`，保存到固定位置。发布页附有 `SHA256SUMS`；可用 `Get-FileHash -Algorithm SHA256` 核对包文件。
+从 [GitHub Releases](https://github.com/Han-1413141/dsh-wsl-native/releases/latest) 下载 `dsh-wsl-native-0.8.0.tgz`，保存到固定位置。发布页附有 `SHA256SUMS`；可用 `Get-FileHash -Algorithm SHA256` 核对包文件。
 
 使用桌面端安装目录内的 `resources\runtime\cli\bin\dsh.cmd`。下面以 `F:\deepseek harness` 为例，请换成本机实际目录：
 
 ```powershell
 $dshDesktop = 'F:\deepseek harness\resources\runtime\cli\bin\dsh.cmd'
-& $dshDesktop plugin --profile desktop add 'C:\Downloads\dsh-wsl-native-0.7.0.tgz'
+& $dshDesktop plugin --profile desktop add 'C:\Downloads\dsh-wsl-native-0.8.0.tgz'
 & $dshDesktop plugin --profile desktop list --depth 0
 ```
 
@@ -33,7 +33,7 @@ $dshDesktop = 'F:\deepseek harness\resources\runtime\cli\bin\dsh.cmd'
 
 ```powershell
 .\scripts\install-desktop.ps1 `
-  -PackagePath 'C:\Downloads\dsh-wsl-native-0.7.0.tgz' `
+  -PackagePath 'C:\Downloads\dsh-wsl-native-0.8.0.tgz' `
   -DshCommand 'F:\deepseek harness\resources\runtime\cli\bin\dsh.cmd'
 ```
 

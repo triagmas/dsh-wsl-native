@@ -1,10 +1,10 @@
 import { stored } from './client-session.mjs';
-import { startSession } from './workspace-session.mjs';
-import { createConnectionRecovery } from './connection-recovery.mjs';
-import { createWorkHandoff } from './work-handoff.mjs';
-import { readHandoff, appOrigin, DESKTOP_ORIGIN } from './handoff.mjs';
+import { startSession } from './workspace-session.js';
+import { createConnectionRecovery } from './connection-recovery.js';
+import { createWorkHandoff } from './work-handoff.js';
+import { readHandoff, appOrigin, DESKTOP_ORIGIN } from './handoff.js';
 import { acceptsMessage, catalogOf, cleanCatalog, conversationKey, embeddedUrl,
-  CONVERSATION_PANEL, CONVERSATION_PROTOCOL } from './conversation-protocol.mjs';
+  CONVERSATION_PANEL, CONVERSATION_PROTOCOL } from './conversation-protocol.js';
 
 export function createConversations(ctx, api, model) {
   const entries = new Map(), requests = new Map(), lifetime = new AbortController();

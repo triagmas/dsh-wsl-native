@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
-import { handoffText } from './work-handoff.mjs';
+import { handoffText } from './work-handoff.js';
 
 export function HandoffDialog({ model, source, close }) {
   const chat = model.conversations;

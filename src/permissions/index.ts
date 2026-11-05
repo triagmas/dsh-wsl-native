@@ -40,7 +40,16 @@ export interface GuardEnvironment {
 }
 
 /** Field names a tool call must never carry, because they would change the policy. */
-const FORBIDDEN_ARGUMENT_KEYS = ['mode', 'permissionMode', 'permissions', 'permission', 'grant', 'grants'];
+const FORBIDDEN_ARGUMENT_KEYS = [
+  'mode',
+  'permissionMode',
+  'permissions',
+  'permission',
+  'grant',
+  'grants',
+  'userInitiated',
+  'confirm',
+];
 
 /**
  * Reject tool arguments that try to influence the permission policy.

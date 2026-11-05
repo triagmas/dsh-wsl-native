@@ -17,17 +17,7 @@ await buildWorker();
 
 await build({
   absWorkingDir: root,
-  entryPoints: [
-    'src/index.ts',
-    'src/worker.ts',
-    'src/service.ts',
-    'src/permissions/index.ts',
-    'src/i18n/index.ts',
-    'src/i18n/en.ts',
-    'src/i18n/ru.ts',
-    'src/i18n/zh-CN.ts',
-    'test/*.test.ts',
-  ],
+  entryPoints: ['src/**/*.ts', 'test/*.test.ts'],
   outbase: '.',
   outdir: '.test-build',
   bundle: false,
@@ -38,12 +28,18 @@ await build({
   loader: { '.css': 'text' },
 });
 
-/** Compile one changed source module on demand for the incremental watch loop. */
+// `node --test <pattern>` also accepts file globs from Node 22 onward.
 const args = process.argv.slice(2);
 const nodeArgs = ['--test', ...(args.length ? args : ['.test-build/test/*.test.js'])];
 const child = spawn(process.execPath, nodeArgs, {
   cwd: root,
   stdio: 'inherit',
-  env: { ...process.env, NODE_OPTIONS: process.env.NODE_OPTIONS ?? '' },
+  env: {
+    ...process.env,
+    // The worker is injected as a self-contained bundle, so tests must use the
+    // built artifact rather than the unbundled test tree.
+    DSH_WSL_WORKER: path.join(root, 'dist', 'worker.js'),
+    NODE_OPTIONS: process.env.NODE_OPTIONS ?? '',
+  },
 });
 child.once('exit', (code) => process.exit(code ?? 1));

@@ -24,7 +24,8 @@
     "outDir": "dist",
     "rootDir": ".",
     "types": ["node"],
-    "allowJs": false
+    "allowJs": true,
+    "checkJs": false
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "scripts/**/*.mjs", "types/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "build", ".test-build"]

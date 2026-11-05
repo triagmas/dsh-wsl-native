@@ -2,14 +2,14 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Button, MenuItemButton, StateDot, IconPanelLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { TerminalIcon } from './components.jsx';
 import { useModel } from './page.jsx';
-import { CONVERSATION_PANEL } from './conversation-protocol.mjs';
-import { appOrigin } from './handoff.mjs';
-import { mountDesktopView } from './desktop-view.mjs';
+import { CONVERSATION_PANEL } from './conversation-protocol.js';
+import { appOrigin } from './handoff.js';
+import { mountDesktopView } from './desktop-view.js';
 import { CompactConversationList } from './sidebar.jsx';
-import { installNativeWorkspaces } from './native-workspaces.mjs';
+import { installNativeWorkspaces } from './native-workspaces.js';
 import { installNativeSidebar } from './native-sidebar.jsx';
 import { WorkspaceDialogs } from './workspace-dialogs.jsx';
-import { bindHandoffDraft } from './work-handoff.mjs';
+import { bindHandoffDraft } from './work-handoff.js';
 
 function HandoffDraftBinding({ ctx, sessionId, useStore, actions }) {
   const draft = useStore(state => state.draft), latest = useRef(draft);

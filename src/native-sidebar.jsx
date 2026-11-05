@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { MenuItemButton, IconPinOutlineRegular, IconArchiveOutlineRegular, IconEditOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { useModel } from './page.jsx';
-import { projectWorkspaces, reorderWorkspace, remoteId } from './workspace-projection.mjs';
-import { CONVERSATION_PANEL } from './conversation-protocol.mjs';
+import { projectWorkspaces, reorderWorkspace, remoteId } from './workspace-projection.js';
+import { CONVERSATION_PANEL } from './conversation-protocol.js';
 
 // Mirror child slots under an owned namespace. The original registrations and
 // their authorization remain intact; no private renderer or entry is patched.

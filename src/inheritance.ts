@@ -73,28 +73,34 @@ const digest = (value: unknown): string =>
     .update(typeof value === 'string' || Buffer.isBuffer(value) ? value : JSON.stringify(value))
     .digest('hex');
 
-/** Custom YAML tag preserving Cordis `!!js/...` expressions during inheritance. */
+/** Custom YAML tag preserving one Cordis `!!js/...` expression verbatim. */
 class Expression {
-  constructor(readonly value: string) {}
+  constructor(
+    readonly value: string,
+    readonly tag: string,
+  ) {}
   toString(): string {
     return this.value;
   }
 }
 
-const tags = [
-  {
-    tag: 'tag:yaml.org,2002:js',
-    identify: (value: unknown): boolean => value instanceof Expression,
-    resolve: (value: string): Expression => new Expression(value),
+/** Expression tags Cordis accepts in a patch file. */
+const EXPRESSION_TAGS = ['js', 'js/expression', 'js/function'] as const;
+
+const tags = EXPRESSION_TAGS.map((name) => {
+  const tag = `tag:yaml.org,2002:${name}`;
+  return {
+    tag,
+    identify: (value: unknown): boolean => value instanceof Expression && value.tag === tag,
+    resolve: (value: string): Expression => new Expression(value, tag),
     stringify: (
       item: { value: unknown },
       ctx: Parameters<typeof stringifyString>[1],
       onComment: Parameters<typeof stringifyString>[2],
       onChompKeep: Parameters<typeof stringifyString>[3],
-    ): string =>
-      stringifyString({ ...item, value: String(item.value) }, ctx, onComment, onChompKeep),
-  },
-];
+    ): string => stringifyString({ ...item, value: String(item.value) }, ctx, onComment, onChompKeep),
+  };
+});
 
 type Plain = Record<string, unknown>;
 
@@ -127,7 +133,7 @@ function flatten(value: unknown, prefix: string[] = [], map = new Map<string, un
 
 /** Rebuild a nested object from JSON-path keyed leaves. */
 function expand(map: Map<string, unknown>): unknown {
-  let root: unknown = Object.create(null);
+  let root: unknown = {};
   for (const [encoded, value] of map) {
     const keys = JSON.parse(encoded) as string[];
     if (!keys.length) {
@@ -138,7 +144,7 @@ function expand(map: Map<string, unknown>): unknown {
     for (const key of keys.slice(0, -1)) {
       if (!Object.hasOwn(parent, key) || !plain(parent[key])) {
         Object.defineProperty(parent, key, {
-          value: Object.create(null),
+          value: {},
           enumerable: true,
           configurable: true,
           writable: true,
@@ -204,7 +210,18 @@ export function mergePatchLayers(current: unknown, incoming: unknown, baseline: 
       ]),
     );
   const result = mergeInherited(keyed(current), keyed(incoming), baseline);
-  return { ...result, value: Object.values(result.value as Plain) };
+  const merged = result.value as Plain;
+  // Source rows keep their order; local-only rows follow, so a sync does not
+  // silently reorder a Linux-specific patch layer.
+  const order = [...Object.keys(keyed(incoming)), ...Object.keys(keyed(current))];
+  const seen = new Set<string>();
+  const rows: unknown[] = [];
+  for (const key of order) {
+    if (seen.has(key) || !Object.hasOwn(merged, key)) continue;
+    seen.add(key);
+    rows.push(merged[key]);
+  }
+  return { ...result, value: rows };
 }
 
 async function optional(file: string): Promise<string | null> {

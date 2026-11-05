@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Input, Modal, StateDot } from '@deepseek-ai/dsh-client-ui-primitives';
 import { useModel } from './page.jsx';
-import { conversationRows } from './conversation-protocol.mjs';
+import { conversationRows } from './conversation-protocol.js';
 import { TerminalIcon } from './components.jsx';
 
 export const iconPaths = {
