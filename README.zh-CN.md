@@ -2,7 +2,7 @@
 
 [English](README.md) · [Русский](README.ru.md) · **简体中文**
 
-**在官方 Windows DeepSeek Harness Desktop 中连接现有 WSL2 的原生 Linux Harness 运行时。**
+**目标：官方 Windows DeepSeek Harness Desktop 只作为用户界面，普通新对话与代理/工具执行默认由现有 WSL2 中的原生 Linux Harness 负责。** 这目前是**待实现并验收的要求**；已有的 Windows/WSL 双宿主选择不等于自动转发。详见 [WSL-first contract](docs/wsl-first.md)。
 
 这是基于 [Han-1413141/dsh-wsl-native](https://github.com/Han-1413141/dsh-wsl-native)（MIT）的独立社区分支。目标是保留原有 Windows ↔ WSL2 集成能力，把 JavaScript/JSX 迁移到 **严格 TypeScript/TSX**，并完善多语言界面和权限管理，而不是重新开发 Desktop。
 
