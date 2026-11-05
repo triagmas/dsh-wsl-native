@@ -4,7 +4,7 @@
 
 ## 1. Problem and outcome
 
-The user has an official DeepSeek Harness Desktop on Windows and an existing Ubuntu WSL2 installation. They want the Desktop interface to work with a genuine Linux Harness runtime, Linux project folders and Linux-native commands without switching to an entirely different application.
+The user has an official DeepSeek Harness Desktop on Windows and existing Ubuntu WSL2. The **Windows Desktop is the interface**; normal new chats, agent/tool execution and Linux projects should use **native Linux Harness in WSL by default**, without repeatedly choosing WSL. See [WSL-first execution contract](wsl-first.md).
 
 The deliverable is an **extension to the official Desktop**, not a separately authored desktop shell.
 
@@ -12,6 +12,7 @@ The deliverable is an **extension to the official Desktop**, not a separately au
 
 | ID | Requirement | Acceptance evidence |
 | --- | --- | --- |
+| F00 | **Default normal New Chat → WSL native agent** | In official Desktop, normal new chat and prompt execute through native Linux Harness without manual WSL selection; no silent Windows fallback; verify actual supported host integration API |
 | F01 | Load as an official DSH Desktop plugin | Installed in a designated test Desktop profile; visible management panel |
 | F02 | List/select existing WSL2 distributions and Linux users | Correct environment identity; no new distro created |
 | F03 | Select and validate a Linux workspace | Browse/open absolute Linux project paths; errors preserve prior selection |
@@ -61,10 +62,10 @@ Windows command execution remains a supported feature. A new Broker or automatic
 | G1 — code and unit checks | Strict TypeScript, i18n, tests, packaging and CI | Reported green in R03.1 and subsequent documentation runs |
 | G2 — test-profile Desktop loading | Actual package loads in official Desktop under non-working profile | **Not yet executed** |
 | G3 — native WSL integration | Existing Ubuntu connects; opens native Linux runtime and conversation/workspace | **Not yet executed** |
-| G4 — user acceptance | Owner reviews UI and essential workflow | **Not yet approved** |
+| G4 — user acceptance | Owner verifies normal **Desktop New Chat → WSL native agent and Linux tools** plus UI and failures | **Not yet approved** |
 | G5 — merge readiness | English-canonical documentation, optional RU/ZH translations, CI, no unresolved release blockers | **Not yet satisfied** |
 
-Do not change a gate's status based only on a written test plan, simulator output or code inspection.
+Do not change a gate's status based only on a written test plan, simulator output or code inspection. **F00 is not yet implemented or demonstrated**; the current dual-host UI alone cannot satisfy it.
 
 ## 7. Explicit non-goals
 
