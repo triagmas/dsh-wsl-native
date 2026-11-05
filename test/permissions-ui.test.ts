@@ -26,6 +26,12 @@ import { zhCN } from '../src/i18n/zh-CN.js';
 import type { GuardEnvironment } from '../src/permissions/index.js';
 
 const HOUR = 60 * 60 * 1000;
+/**
+ * POSIX-only auto-allow: on Windows the WSL path cannot be resolved by the
+ * executing host, so the policy asks instead of trusting the grant (SEC-03).
+ */
+const posix = process.platform !== 'win32';
+const granted = posix ? 'allow' : 'ask';
 const surface = (): ReturnType<typeof createUserSurfaceAuthority> =>
   createUserSurfaceAuthority({ kind: 'control-route', authenticated: true });
 
@@ -220,7 +226,7 @@ test('a grant created from the form only covers its own target and folder', asyn
   assert.equal(
     (await clock.policy.evaluate({ capability: 'write', target: 'wsl', path: '/home/user/project/a.txt' }, environment))
       .kind,
-    'allow',
+    granted,
   );
   assert.equal(
     (await clock.policy.evaluate({ capability: 'write', target: 'wsl', path: '/home/user/other.txt' }, environment))
@@ -255,7 +261,7 @@ test('a grant expires, and revoking it makes the operation ask again', async () 
   assert.equal(
     (await clock.policy.evaluate({ capability: 'write', target: 'wsl', path: '/home/user/project/a.txt' }, environment))
       .kind,
-    'allow',
+    granted,
   );
   assert.equal(clock.policy.revoke(grant.id), true);
   assert.equal(
