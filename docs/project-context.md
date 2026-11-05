@@ -8,20 +8,24 @@
 
 It is not a replacement Desktop app, a new agent harness, a Windows installer, a security product, or a virtualization project.
 
-The intended experience is simple:
+**Primary owner requirement (2026-11-05): WSL-first execution.** Windows Desktop is the interface; the normal New Chat action and subsequent agent/tool execution must use the full native Linux Harness in the existing WSL2 Ubuntu by default. The user should configure WSL once, **not choose WSL for each task**.
 
-1. Open the official Harness Desktop already installed on Windows.
-2. Use the plugin's Windows/WSL interface to select an existing WSL distribution and Linux workspace.
-3. Launch or reuse the Linux Harness runtime in WSL; display Linux conversations and workspaces through the official Desktop.
-4. Switch between Windows and Linux conversations while each runtime keeps its own environment, tools, files and session state.
-5. Use existing cross-OS tools intentionally when a task requires them.
+The expected experience:
+
+1. Open the official Windows Desktop; configure the existing WSL distro/user/project root once as needed.
+2. Click the **normal New Chat** action and enter a prompt.
+3. Native Linux Harness inside WSL handles the prompt, agent orchestration, tools, Bash and Linux projects.
+4. Reopening Linux chats/workspaces continues in WSL. A failure to connect **must not silently fall back to Windows**.
+5. Explicit Windows mode may remain as a compatibility option, but is not the default.
+
+See the [WSL-first execution contract](wsl-first.md). The current plugin has dual-host navigation; this default behavior is a **new acceptance requirement, not yet proven**.
 
 ### Primary delivery
 
 Modernize the existing upstream plugin [Han-1413141/dsh-wsl-native](https://github.com/Han-1413141/dsh-wsl-native), preserving its functioning architecture:
 
 - Migrate the JavaScript and JSX codebase to **TypeScript and TSX with `strict: true`**.
-- Preserve original Windows ↔ WSL2 connectivity, embedded native Linux Harness, conversations, tools and workspace management.
+- Preserve original Windows ↔ WSL2 connectivity, embedded native Linux Harness, conversations, tools and workspace management, **and change default new-chat routing to WSL-first**.
 - Maintain Russian, English and Simplified Chinese UI translations.
 - Provide user-configurable **Protected / Trusted / Full Access** permission modes, reusing the existing Harness approval mechanisms where appropriate.
 - Build an installable `.tgz` and verify compatibility with the targeted official Desktop build.
@@ -67,4 +71,4 @@ Such work is **outside the current scope** unless the owner explicitly chooses i
 
 ## Definition of success
 
-A packaged TypeScript plugin loads into the official Windows Desktop, connects to the existing WSL2 Ubuntu runtime and opens native Linux Harness conversations/workspaces without breaking existing Windows conversations. Tests, CI, localization and documentation pass; behavior requiring a real Desktop run is recorded as **not validated** until it has actually run. The owner separately approves any installation or merge.
+A packaged TypeScript plugin loads into the official Windows Desktop; normal new chats and their agent/tool execution **default to WSL native Linux Harness without manually selecting WSL**, preserving deliberate/legacy Windows conversations. Tests, CI, localization and documentation pass; behavior requiring a real Desktop run is recorded as **not validated** until it has actually run. The owner separately approves any installation or merge.
