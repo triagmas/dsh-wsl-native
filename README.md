@@ -2,7 +2,7 @@
 
 [Русский](README.ru.md) · [简体中文](README.zh-CN.md) · **English**
 
-**Use the official DeepSeek Harness Desktop on Windows with a full native DeepSeek Harness runtime inside WSL2.**
+**Goal: use the official DeepSeek Harness Desktop on Windows as the UI while normal new chats and agent/tool execution run by default in native DeepSeek Harness inside WSL2.** This WSL-first default is a **new acceptance requirement, not yet implemented or validated** in the current 0.8.0 candidate; existing dual-host switching alone is insufficient. See [WSL-first contract](docs/wsl-first.md).
 
 This is an independent community plugin built from [Han-1413141/dsh-wsl-native](https://github.com/Han-1413141/dsh-wsl-native) (MIT). The `triagmas` fork is migrating the existing plugin to **strict TypeScript/TSX**, improving its UI localization and configurable permission modes **without replacing the official Desktop or rewriting its integration architecture**.
 
