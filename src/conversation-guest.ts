@@ -1,11 +1,11 @@
 import { openWorkspace } from './workspace-session.js';
 import { acceptsMessage, catalogOf, CONVERSATION_PROTOCOL } from './conversation-protocol.js';
-import { openProject } from './client-session.mjs';
+import { openProject } from './client-session.js';
 import { createDesktopMailbox, DESKTOP_MAILBOX, type DesktopMailbox } from './desktop-mailbox.js';
 import { workspaceCommand } from './workspace-commands.js';
 import { createWorkHandoff } from './work-handoff.js';
 import { ct } from './i18n/client.js';
-import type { Catalog, ClientContext, GuestEvent, HandoffRecord, PanelApi } from './client-types.js';
+import type { Catalog, ClientContext, ClientModel, GuestEvent, HandoffRecord, PanelApi } from './client-types.js';
 
 /** Guest state exposed to the panel menu. */
 export interface GuestState {
@@ -16,11 +16,7 @@ export interface GuestState {
   dispose?(): void;
 }
 
-/** Model surface the guest adds itself to. */
-export interface GuestModel {
-  guest?: GuestState;
-  emit(): void;
-}
+
 
 /** Embed instructions resolved from the handoff fragment. */
 export interface GuestEmbed {
@@ -41,12 +37,12 @@ interface AdoptedSettings {
  */
 export function startConversationGuest(
   ctx: ClientContext,
-  model: GuestModel,
+  model: ClientModel,
   api: PanelApi,
   embed: GuestEmbed,
 ): void {
   const desktop = embed.transport === 'desktop';
-  if ((!desktop && window.parent === window) || model.guest) return;
+  if ((!desktop && window.parent === window) || model.guest !== undefined) return;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastCatalog = '';
   let stopped = false;

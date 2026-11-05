@@ -19,7 +19,7 @@ import {
   directoryError,
 } from "./components.jsx";
 import { appOrigin, parentUrl } from "./handoff.js";
-import { openProject } from "./client-session.mjs";
+import { openProject } from "./client-session.js";
 import { InheritanceSection } from "./inheritance-ui.jsx";
 
 export function useModel(model) {

@@ -147,6 +147,34 @@ export interface ClientContext {
   inject(dependencies: string[], callback: (ctx: ClientContext) => void): void;
 }
 
+/** A sub-model that cleans up after itself. */
+export interface DisposableModel {
+  dispose?(): void;
+}
+
+/**
+ * Panel model shared by every client module: host status, persisted choices and
+ * the sub-models attached at runtime (conversations, embedded guest).
+ */
+export interface ClientModel {
+  state: PanelStatus | null;
+  error: string | null;
+  draft: string | null;
+  pending: unknown;
+  popup: unknown;
+  parentOrigin: string | null;
+  readyLink: unknown;
+  guest?: DisposableModel;
+  conversations?: DisposableModel;
+  subscribe(listener: () => void): () => void;
+  emit(): void;
+  refresh(): Promise<PanelStatus>;
+  setPending(pending: unknown): void;
+  remember(): void;
+  adopt(): Promise<void>;
+  dispose?(): void;
+}
+
 /** Panel API call bound to the plugin's control routes. */
 export type PanelApi = (endpoint: string, payload?: Record<string, unknown>) => Promise<unknown>;
 

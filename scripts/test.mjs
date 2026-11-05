@@ -17,7 +17,7 @@ await buildWorker();
 
 await build({
   absWorkingDir: root,
-  entryPoints: ['src/**/*.ts', 'src/**/*.mjs', 'test/*.test.ts', 'test/legacy/*.test.mjs'],
+  entryPoints: ['src/**/*.ts', 'test/*.test.ts', 'test/legacy/*.test.mjs'],
   outbase: '.',
   outdir: '.test-build',
   bundle: false,
@@ -27,18 +27,6 @@ await build({
   logLevel: 'warning',
   loader: { '.css': 'text' },
 });
-
-// esbuild renames `.mjs` inputs to `.js` outputs; rewrite imports that still
-// name a `.mjs` file so the compiled tree stays linked.
-for (const directory of [path.join(outdir, 'src'), path.join(outdir, 'test', 'legacy')]) {
-  const names = await fs.readdir(directory).catch(() => []);
-  for (const name of names.filter((item) => item.endsWith('.js'))) {
-    const file = path.join(directory, name);
-    const text = await fs.readFile(file, 'utf8');
-    const rewritten = text.replace(/(from\s+["'][^"']+)\.mjs(["'])/g, '$1.js$2');
-    if (rewritten !== text) await fs.writeFile(file, rewritten);
-  }
-}
 
 // `node --test <pattern>` also accepts file globs from Node 22 onward.
 const args = process.argv.slice(2);

@@ -1,19 +1,12 @@
 import styles from './client.css';
 import { TerminalIcon } from './components.jsx';
 import { WslPage } from './page.jsx';
-import { createClientModel } from './client-session.mjs';
-import { createConversations } from './conversation-model.mjs';
+import { createClientModel } from './client-session.js';
+import { createConversations } from './conversation-model.js';
 import { installConversationSlots } from './conversations.jsx';
 import { ct, setClientLocale } from './i18n/client.js';
-import type { ClientContext, HarnessResult, PanelApi } from './client-types.js';
+import type { ClientContext, ClientModel, HarnessResult, PanelApi } from './client-types.js';
 
-/** Model surface the JS runtime modules provide. */
-interface ClientModel {
-  refresh(): Promise<{ locale?: string } | undefined>;
-  dispose(): void;
-  conversations: unknown;
-  [key: string]: unknown;
-}
 
 export const name = 'dsh-wsl-native-client';
 export const inject = ['connection', 'slots', 'layout', 'workspaces', 'uiWorkspace', 'sessions'];
@@ -34,10 +27,10 @@ function createApi(ctx: PanelContext): PanelApi {
 
 export function apply(ctx: PanelContext): void {
   const api = createApi(ctx);
-  const model = createClientModel(ctx, api) as unknown as ClientModel;
+  const model: ClientModel = createClientModel(ctx, api);
   model.conversations = createConversations(ctx, api, model);
   installConversationSlots(ctx, model, api);
-  ctx.effect(() => () => model.dispose());
+  ctx.effect(() => () => model.dispose?.());
   ctx.effect(() => {
     const style = document.createElement('style');
     style.dataset.dshWslNative = '';
@@ -62,7 +55,7 @@ export function apply(ctx: PanelContext): void {
     ),
   );
   // The panel follows the host's persisted language preference on every status refresh.
-  void model.refresh?.().then((state: { locale?: string } | undefined) => {
+  void model.refresh().then((state) => {
     if (state?.locale) setClientLocale(state.locale);
   });
 }
