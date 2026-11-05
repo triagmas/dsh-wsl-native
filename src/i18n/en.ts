@@ -659,6 +659,14 @@ WSL DSH: the same package and the same install command.
   'ui.workspace.renameTitle': 'Rename the WSL conversation',
   'ui.workspace.stopAndArchive': 'Stop and archive',
   'ui.workspace.user': 'Linux user',
+  'ui.permissions.confirmRequired': 'Type FULL ACCESS exactly to enable Full Access.',
+  'ui.permissions.hoursInvalid': 'Choose a lifetime between 1 and 24 hours.',
+  'ui.permissions.execNoRoot': 'Command execution always covers the whole system; leave the folder empty.',
+  'ui.permissions.rootRequired': 'Enter the folder this grant covers.',
+  'ui.permissions.rootInvalid': 'Enter an absolute folder: C:\\… for Windows, /… for Linux.',
+  'ui.permissions.minutesOption': '{minutes} min',
+  'ui.permissions.fullAccessDuration': 'Duration',
+  'ui.permissions.rootOptional': 'Folder this grant covers',
 } as const;
 
 export type MessageKey = keyof typeof en;

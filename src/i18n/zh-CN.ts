@@ -614,4 +614,12 @@ WSL 中的 DSH：同一个插件包、同一个安装命令。
   'ui.workspace.renameTitle': '重命名 WSL 对话',
   'ui.workspace.stopAndArchive': '停止并归档',
   'ui.workspace.user': 'Linux 用户',
+  'ui.permissions.confirmRequired': '输入完整的 FULL ACCESS 以启用完全访问。',
+  'ui.permissions.hoursInvalid': '请选择 1 至 24 小时的有效期。',
+  'ui.permissions.execNoRoot': '命令执行始终作用于整个系统；请将目录留空。',
+  'ui.permissions.rootRequired': '请输入此授权覆盖的目录。',
+  'ui.permissions.rootInvalid': '请输入绝对路径：Windows 为 C:\\…，Linux 为 /…。',
+  'ui.permissions.minutesOption': '{minutes} 分钟',
+  'ui.permissions.fullAccessDuration': '有效期',
+  'ui.permissions.rootOptional': '此授权覆盖的目录',
 };

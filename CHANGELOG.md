@@ -2,6 +2,13 @@
 
 ## 0.8.0 — 2026-10-02
 
+R03.1 权限面板修复：
+
+- **完全访问**：面板新增确认短语输入与时长选择（1 分钟至 24 小时），提交 `{mode, confirm, hours}`；短语不匹配时按钮不可用，模式到期后自动回到 `Protected`。
+- **授权**：界面将 `target`（Windows/WSL）与 `root`（目录）分开；`exec` 不接受目录，`write`/`copy` 要求对应平台的绝对路径。面板与宿主共用 `src/permissions-form.ts` 的校验，不再发送会被拒绝的参数。
+- 新增 15 个测试（共 175）：短语与时长转换、分钟截断、目标/目录分离、路径格式、授权有效期、撤销与跨目标隔离。
+- `docs/r04-isolated-test.md` 依据已安装的 0.2.1-rc.5 `app.asar` 重写：`DSH_HOME`、`profiles/desktop`、Electron `userData`、`--user-data-dir`、插件 `nativeRoot` 均为核实值，并给出 WSL interop 的三种隔离选项。
+
 TypeScript 与发布候选（R03）：
 
 - 面板剩余 8 个 `.jsx` 全部转为严格 `.tsx`，`tsconfig.json` 删除 `allowJs`/`checkJs` 例外；React 结构与 DSH 兼容性保持不变，未引入 `any`、`@ts-ignore` 或 `@ts-expect-error`。

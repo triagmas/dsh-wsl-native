@@ -8,6 +8,34 @@ The whole scenario is built around one rule: **the working Harness Desktop
 profile, its projects and its credentials are never touched.** All state lives in
 a throwaway profile directory with throwaway data.
 
+## 0. Verified facts (read from the installed 0.2.1-rc.5 `app.asar`)
+
+These replace the earlier guesses (`DSH_PROFILE_DIR`, `DSH_WSL_HOME`, a
+`--profile-dir` flag). Nothing below was executed; the values come from the
+shipped sources:
+
+| Item | Verified value | Source |
+| --- | --- | --- |
+| Desktop build | `@deepseek-ai/dsh-desktop` **0.2.1-rc.5**, commit `d4db512a969fccf0c5cc7ec8fe38e9c1d27af916`, bundled Node 24.21.0 | `app.asar:/package.json`, `/dsh/desktop-runtime.json` |
+| Install directory | `%LOCALAPPDATA%\Programs\DeepSeek Harness\` (`app.asar` 175 MB) | filesystem |
+| Harness home | `$DSH_HOME`, else `%USERPROFILE%\.dsh` | `@deepseek-ai/dsh-home-paths` (`DSH_HOME_ENV`, `DSH_HOME_DIR_NAME`) |
+| Profiles root | `$DSH_HOME/profiles/<name>` | `dsh-app-boot`: `PROFILES_DIR = "profiles"`, `resolveProfileDir()` |
+| Desktop profile | `$DSH_HOME/profiles/desktop`, lock file `$DSH_HOME/profiles/desktop/lock` | `dsh-desktop` `resolveDesktopPaths()` |
+| Plugin install target | `dsh plugin --profile <name> add <pkg>` runs pnpm **inside that profile directory** | `@deepseek-ai/dsh/lib/plugin-*.js` |
+| Electron userData | `app.getPath("userData")` → `%APPDATA%\@deepseek-ai\dsh-desktop` | `dsh-desktop` `main.js` |
+| Desktop shell settings | `<userData>\desktop\settings.json` | `readDesktopSettings()` |
+| CLI profile override | `--profile <name>` only; `desktop` cannot be booted from the CLI | `@deepseek-ai/dsh/lib/bin.js` |
+| Linux runtime root | plugin config `nativeRoot`, else `~/.local/share/dsh-wsl-native`; DSH home for Linux is `<nativeRoot>/dsh-home` | this repo, `src/launcher.ts:179` |
+
+Two consequences that the earlier plan got wrong:
+
+1. **There is no per-profile environment variable.** Isolating the profile means
+   pointing `DSH_HOME` at a fresh directory; `profiles/desktop` then lives inside
+   it automatically.
+2. **`DSH_HOME` does not isolate Electron state.** Update channels, window
+   geometry and the desktop `settings.json` live under `userData`, which must be
+   redirected separately with Electron's standard `--user-data-dir` switch.
+
 ## 1. Preconditions
 
 | Requirement | Value / check |
@@ -27,17 +55,18 @@ profile.
 ```text
 Windows
   %TEMP%\dsh-r04\                         <- everything disposable
-    profile\                              <- DSH profile for the test (never %APPDATA%\deepseek-harness)
-    config.dsh-profile\
+    dsh-home\                             <- DSH_HOME for the test: profiles, sessions, credentials
+      profiles\desktop\                   <- plugin install target for the test only
+    user-data\                            <- Electron --user-data-dir for the test
     projects\demo-project\                <- fake project created for the test
     logs\
     dsh-wsl-native-0.8.0.tgz
 
-WSL
-  ~/dsh-r04/                              <- separate runtime home (DSH_WSL_HOME)
-    home\.dsh\                            <- the Linux-side DSH home for the test
-    projects\demo\                        <- fake Linux project, no user files
-    logs\
+WSL (inside the test distribution)
+  ~/dsh-r04\native\                       <- plugin config nativeRoot for the test
+    dsh-home\                             <- Linux DSH_HOME used by the launched runtime
+    runtime\                              <- the runtime the plugin installs there
+  ~/dsh-r04\projects\demo\                <- fake Linux project, no user files
 ```
 
 `%TEMP%\dsh-r04` and `~/dsh-r04` are the **only** cleanup roots. Never clean
@@ -64,18 +93,31 @@ procedure.
    & $cli plugin --profile r04-test add "$env:TEMP\dsh-r04\dsh-wsl-native-0.8.0.tgz"
    ```
 
-4. Start the desktop app with the test profile (separate config root and data
-   directory), for example:
+4. Start the desktop app with both roots redirected (verified names only):
 
    ```powershell
-   $env:DSH_PROFILE_DIR   = "$env:TEMP\dsh-r04\profile"
-   $env:DSH_WSL_HOME      = "$env:TEMP\dsh-r04\config.dsh-profile"
-   & 'F:\deepseek harness\DeepSeek Harness.exe' --user-data-dir "$env:TEMP\dsh-r04\profile"
+   $env:DSH_HOME = "$env:TEMP\dsh-r04\dsh-home"
+   & "$env:LOCALAPPDATA\Programs\DeepSeek Harness\DeepSeek Harness.exe" `
+       --user-data-dir "$env:TEMP\dsh-r04\user-data"
    ```
 
-   The exact flag names must be read from the installed build before running;
-   if the build has no isolated-profile switch, **stop** — the test cannot be
-   isolated and must not proceed.
+   `DSH_HOME` moves the profile, sessions and credentials; `--user-data-dir` is
+   Electron's own switch and moves window state, update settings and logs. If
+   either directory already contains a `profiles\desktop` from a previous run,
+   the run is not isolated — stop and recreate the tree.
+
+5. In the test profile's `profiles\desktop\cordis.patch.yml`, set the plugin
+   config so the Linux runtime is installed under the test directory:
+
+   ```yaml
+   - id: dsh-wsl-native
+     config:
+       nativeRoot: /home/<user>/dsh-r04/native
+   ```
+
+   Confirm the effective value with `dsh --profile desktop --dump-config` in the
+   test `DSH_HOME` when the app is closed; the plugin itself prints it in the
+   panel diagnostics.
 5. Open the WSL panel and select the distribution, then set the Linux directory
    to `~/dsh-r04/projects/demo`.
 
@@ -98,6 +140,24 @@ Run them in order and record the outcome of each.
 | 11 | Reconnect | kill the runtime from the diagnostics section, reconnect, conversation recovers | screenshot |
 | 12 | Isolation audit | no file appeared under the working profile, `%APPDATA%`, or the real project | `dir` listing before/after |
 
+## 4a. Interop risk (must be decided before running)
+
+The agent's Linux shell can reach Windows without the plugin (`powershell.exe`,
+`/mnt/c/...`), because WSL interop is enabled by default and this plugin does not
+change it. That means the isolated profile protects **state**, not **the Windows
+user**. Three options, in decreasing strength:
+
+| Option | Isolation | Cost |
+| --- | --- | --- |
+| **A. Separate local Windows account** `dsh-r04`, own WSL distribution, run everything there | real: the test account cannot read the owner's profile, and its interop reaches only its own user | needs an administrator once; adds a user and a distribution |
+| **B. Same account, `DSH_HOME` + `--user-data-dir` + `nativeRoot`** | functional only: state is separate, the Windows account is shared | none; must be stated in the result |
+| **C. Windows Sandbox / VM** | strongest, disposable | needs virtualization; WSL inside the sandbox |
+
+Recommendation: **A** if the owner accepts one local account and one extra WSL
+distribution; otherwise **B**, with the report explicitly marking every
+"isolation" result as state-only. Do not edit `/etc/wsl.conf` to disable
+interop — that is a global change outside this task.
+
 ## 5. Rollback and cleanup
 
 1. Close the test Desktop instance.
@@ -109,7 +169,7 @@ Run them in order and record the outcome of each.
 
 3. Stop only the runtime started by this test, using the test profile's CLI — not
    a global `wsl --shutdown` and not another distribution's process.
-4. Delete `%TEMP%\dsh-r04` and `~/dsh-r04` after listing their contents and
+4. Delete `%TEMP%\dsh-r04` and `~/dsh-r04` (or `~/dsh-r04/native`) after listing their contents and
    confirming both paths are the ones created in step 2 of the launch procedure.
 5. Confirm the working profile is unchanged (file count and modification time of
    its profile directory before/after) and restart the normal Desktop.

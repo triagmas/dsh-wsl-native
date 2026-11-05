@@ -638,4 +638,12 @@ DSH в WSL: тот же пакет и та же команда установк�
   'ui.workspace.renameTitle': 'Переименовать диалог WSL',
   'ui.workspace.stopAndArchive': 'Остановить и архивировать',
   'ui.workspace.user': 'Пользователь Linux',
+  'ui.permissions.confirmRequired': 'Введите ровно FULL ACCESS, чтобы включить полный доступ.',
+  'ui.permissions.hoursInvalid': 'Выберите срок от 1 до 24 часов.',
+  'ui.permissions.execNoRoot': 'Выполнение команд всегда охватывает всю систему; оставьте каталог пустым.',
+  'ui.permissions.rootRequired': 'Укажите каталог, на который действует разрешение.',
+  'ui.permissions.rootInvalid': 'Укажите абсолютный путь: C:\\… для Windows, /… для Linux.',
+  'ui.permissions.minutesOption': '{minutes} мин',
+  'ui.permissions.fullAccessDuration': 'Срок',
+  'ui.permissions.rootOptional': 'Каталог, на который действует разрешение',
 };

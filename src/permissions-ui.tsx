@@ -2,6 +2,20 @@ import { useState } from 'react';
 import { Button, Input, StateDot } from '@deepseek-ai/dsh-client-ui-primitives';
 import { useModel } from './page.js';
 import { ct, formatDate } from './i18n/client.js';
+import { FULL_ACCESS_PHRASE } from './permissions/phrase.js';
+import {
+  FULL_ACCESS_MINUTES,
+  GRANT_CAPABILITIES,
+  GRANT_HOURS,
+  GRANT_TARGETS,
+  buildGrantRequest,
+  buildModeRequest,
+  minutesLabelKey,
+  minutesLabelParams,
+  needsRoot,
+  type GrantCapability,
+  type GrantTarget,
+} from './permissions-form.js';
 import type { MessageKey } from './i18n/en.js';
 import type { PermissionMode, PermissionView, PanelApi } from './client-types.js';
 import type { PanelModel } from './panel-types.js';
@@ -23,17 +37,14 @@ const OPTIONS: ModeOption[] = [
 ];
 
 /** Capability labels, typed so a missing key fails the build. */
-const CAPABILITY_LABELS: Record<(typeof CAPABILITIES)[number], MessageKey> = {
+const CAPABILITY_LABELS: Record<GrantCapability, MessageKey> = {
   exec: 'ui.permissions.capability.exec',
   write: 'ui.permissions.capability.write',
   copy: 'ui.permissions.capability.copy',
 };
 
-/** Grant lifetimes offered in the add form. */
-const HOURS = [1, 4, 8, 24] as const;
-
-/** Capability presets offered in the add form. */
-const CAPABILITIES = ['exec', 'write', 'copy'] as const;
+/** Target labels; the names are the same in every language. */
+const TARGET_LABELS: Record<GrantTarget, string> = { windows: 'Windows', wsl: 'WSL' };
 
 /** Format an expiry timestamp, or the "no expiry" label. */
 function expiryText(value: number | null): string {
@@ -55,8 +66,8 @@ export interface PermissionsSectionProps {
 }
 
 /**
- * Permission panel: shows the active mode, its expiry and every standing grant,
- * and lets the user change them through the authenticated control route.
+ * Permission panel: the active mode with its expiry, the Full Access
+ * confirmation form, and the standing grants with add and revoke.
  *
  * The agent can never call these actions: the host mints the authority for this
  * component from the authenticated control route, so a rendered button is
@@ -67,10 +78,14 @@ export function PermissionsSection({ model, api, disabled }: PermissionsSectionP
   const state = model.state;
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [confirming, setConfirming] = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const [minutes, setMinutes] = useState<number>(60);
   const [adding, setAdding] = useState(false);
-  const [capability, setCapability] = useState<(typeof CAPABILITIES)[number]>('exec');
-  const [target, setTarget] = useState('');
-  const [hours, setHours] = useState<number>(4);
+  const [capability, setCapability] = useState<GrantCapability>('write');
+  const [target, setTarget] = useState<GrantTarget>('wsl');
+  const [root, setRoot] = useState('');
+  const [hours, setHours] = useState<number>(8);
 
   if (!state) return null;
   const permissions: PermissionView = state.permissions;
@@ -82,25 +97,52 @@ export function PermissionsSection({ model, api, disabled }: PermissionsSectionP
       : permissions.mode === 'protected'
         ? null
         : ct('ui.permissions.noExpiry');
+  const rootNeeded = needsRoot(capability);
 
-  const change = (mode: PermissionMode): void => {
-    if (blocked || mode === permissions.mode) return;
+  const applyMode = (mode: PermissionMode, phrase: string, lifetime: number): void => {
+    const built = buildModeRequest(mode, phrase, lifetime);
+    if (!built.ok) {
+      setError(ct(built.error));
+      return;
+    }
     setBusy(mode);
     setError('');
-    void api('permissions/mode', { mode })
-      .then(() => model.refresh())
+    void api('permissions/mode', built.value)
+      .then(() => {
+        setConfirming(false);
+        setConfirm('');
+        return model.refresh();
+      })
       .catch((cause: Error) => setError(cause.message))
       .finally(() => setBusy(''));
   };
 
+  const chooseMode = (mode: PermissionMode): void => {
+    if (blocked || mode === permissions.mode) return;
+    setError('');
+    if (mode === 'full-access') {
+      // Turning Full Access on always goes through the phrase and the lifetime.
+      setConfirm('');
+      setConfirming(true);
+      return;
+    }
+    setConfirming(false);
+    applyMode(mode, '', minutes);
+  };
+
   const addGrant = (): void => {
-    if (blocked || !target.trim()) return;
+    if (blocked) return;
+    const built = buildGrantRequest({ capability, target, root, hours });
+    if (!built.ok) {
+      setError(ct(built.error));
+      return;
+    }
     setBusy('grant');
     setError('');
-    void api('permissions/grant', { capability, target: target.trim(), hours })
+    void api('permissions/grant', built.value)
       .then(() => {
         setAdding(false);
-        setTarget('');
+        setRoot('');
         return model.refresh();
       })
       .catch((cause: Error) => setError(cause.message))
@@ -135,7 +177,7 @@ export function PermissionsSection({ model, api, disabled }: PermissionsSectionP
                 aria-checked={active}
                 className={`dsh-wsl-permission-mode${active ? ' is-active' : ''}`}
                 disabled={blocked}
-                onClick={() => change(option.mode)}
+                onClick={() => chooseMode(option.mode)}
               >
                 <span className="dsh-wsl-permission-mode-name">
                   <StateDot state={active ? 'done' : 'idle'} />
@@ -147,6 +189,63 @@ export function PermissionsSection({ model, api, disabled }: PermissionsSectionP
             );
           })}
         </div>
+        {confirming ? (
+          <div className="dsh-wsl-permission-confirm">
+            <label>
+              {ct('ui.permissions.confirmPhrase')}
+              <Input
+                value={confirm}
+                disabled={blocked}
+                placeholder={FULL_ACCESS_PHRASE}
+                autoComplete="off"
+                spellCheck={false}
+                aria-label={ct('ui.permissions.confirmPhrase')}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setConfirm(event.target.value);
+                  setError('');
+                }}
+              />
+            </label>
+            <label>
+              {ct('ui.permissions.fullAccessDuration')}
+              <select
+                value={minutes}
+                disabled={blocked}
+                onChange={(event) => setMinutes(Number(event.target.value))}
+              >
+                {FULL_ACCESS_MINUTES.map((value) => (
+                  <option key={value} value={value}>
+                    {ct(minutesLabelKey(value), minutesLabelParams(value))}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="dsh-wsl-caption">{ct('ui.permissions.confirmFullAccess')}</p>
+            <div className="dsh-wsl-permission-confirm-actions">
+              <Button
+                variant="primary"
+                disabled={blocked || confirm !== FULL_ACCESS_PHRASE}
+                onClick={() => applyMode('full-access', confirm, minutes)}
+              >
+                {ct('ui.permissions.switchMode')}
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={blocked}
+                onClick={() => {
+                  setConfirming(false);
+                  setConfirm('');
+                  setError('');
+                }}
+              >
+                {ct('ui.common.cancel')}
+              </Button>
+            </div>
+            {confirm && confirm !== FULL_ACCESS_PHRASE ? (
+              <p className="dsh-wsl-caption dsh-wsl-permission-warning">{ct('ui.permissions.confirmRequired')}</p>
+            ) : null}
+          </div>
+        ) : null}
         {expiry ? (
           <p className="dsh-wsl-permission-expiry">
             {ct('ui.permissions.modeExpiry')}: <strong>{expiry}</strong>
@@ -175,9 +274,15 @@ export function PermissionsSection({ model, api, disabled }: PermissionsSectionP
                 <select
                   value={capability}
                   disabled={blocked}
-                  onChange={(event) => setCapability(event.target.value as (typeof CAPABILITIES)[number])}
+                  onChange={(event) => {
+                    const next = event.target.value as GrantCapability;
+                    setCapability(next);
+                    // Exec covers the whole target, so a folder would be rejected.
+                    if (!needsRoot(next)) setRoot('');
+                    setError('');
+                  }}
                 >
-                  {CAPABILITIES.map((item) => (
+                  {GRANT_CAPABILITIES.map((item) => (
                     <option key={item} value={item}>
                       {ct(CAPABILITY_LABELS[item])}
                     </option>
@@ -186,11 +291,31 @@ export function PermissionsSection({ model, api, disabled }: PermissionsSectionP
               </label>
               <label>
                 {ct('ui.permissions.grantTarget')}
-                <Input
+                <select
                   value={target}
                   disabled={blocked}
-                  placeholder={ct('ui.permissions.targetPlaceholder')}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTarget(event.target.value)}
+                  onChange={(event) => setTarget(event.target.value as GrantTarget)}
+                >
+                  {GRANT_TARGETS.map((item) => (
+                    <option key={item} value={item}>
+                      {TARGET_LABELS[item]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {ct('ui.permissions.rootOptional')}
+                <Input
+                  value={root}
+                  disabled={blocked || !rootNeeded}
+                  placeholder={target === 'windows' ? 'C:\\' : '/'}
+                  autoComplete="off"
+                  spellCheck={false}
+                  aria-label={ct('ui.permissions.grantRoot')}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setRoot(event.target.value);
+                    setError('');
+                  }}
                 />
               </label>
               <label>
@@ -200,16 +325,19 @@ export function PermissionsSection({ model, api, disabled }: PermissionsSectionP
                   disabled={blocked}
                   onChange={(event) => setHours(Number(event.target.value))}
                 >
-                  {HOURS.map((item) => (
+                  {GRANT_HOURS.map((item) => (
                     <option key={item} value={item}>
                       {ct('ui.permissions.hoursOption', { hours: item })}
                     </option>
                   ))}
                 </select>
               </label>
-              <Button variant="primary" type="submit" disabled={blocked || !target.trim()}>
+              <Button variant="primary" type="submit" disabled={blocked || (rootNeeded && !root.trim())}>
                 {ct('ui.permissions.grantCreate')}
               </Button>
+              <p className="dsh-wsl-caption">
+                {rootNeeded ? ct('ui.permissions.rootRequired') : ct('ui.permissions.execNoRoot')}
+              </p>
             </form>
           ) : null}
           {permissions.grants.length ? (
@@ -218,11 +346,11 @@ export function PermissionsSection({ model, api, disabled }: PermissionsSectionP
                 <li key={grant.id}>
                   <div>
                     <strong>{grant.capability}</strong>
-                    <span title={grant.target}>{grant.target}</span>
-                    <small>
-                      {ct('ui.permissions.expires', { time: expiryText(grant.expiresAt) })}
-                      {grant.root ? ` · ${ct('ui.permissions.grantRoot')}: ${grant.root}` : ''}
-                    </small>
+                    <span>
+                      {grant.target === 'windows' ? 'Windows' : 'WSL'}
+                      {grant.root ? ` · ${grant.root}` : ''}
+                    </span>
+                    <small>{ct('ui.permissions.expires', { time: expiryText(grant.expiresAt) })}</small>
                   </div>
                   <Button size="sm" variant="ghost" disabled={blocked} onClick={() => revoke(grant.id)}>
                     {ct('ui.permissions.grantRevoke')}

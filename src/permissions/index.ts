@@ -27,7 +27,9 @@ export * from './types.js';
 export * from './paths.js';
 
 /** Phrase a user must type to enable Full Access. */
-export const FULL_ACCESS_PHRASE = 'FULL ACCESS';
+import { FULL_ACCESS_PHRASE } from './phrase.js';
+
+export { FULL_ACCESS_PHRASE };
 
 /**
  * Authorities minted by this process. A policy mutation is accepted only when
