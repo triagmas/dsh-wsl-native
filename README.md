@@ -1,3 +1,19 @@
+> **Historical repository — superseded.**
+>
+> The active project is [**triagmas/dsh-wsl**](https://github.com/triagmas/dsh-wsl) — a Windows Electron
+> shell that displays the unmodified DeepSeek Harness WebUI running in the existing WSL2, with published
+> prereleases.
+>
+> This repository keeps the MIT-licensed upstream plugin (v0.7.0) and the unmerged `feat/r01-typescript`
+> work (0.8.0 candidate, closed PR #1) **for history only**. No further development happens here: the
+> plugin direction — rerouting the official Desktop's New Chat into WSL — was rejected by the owner on
+> 2026-11-12.
+>
+> **Русский:** активный проект — [triagmas/dsh-wsl](https://github.com/triagmas/dsh-wsl). Этот
+> репозиторий — только история плагина; работа здесь не продолжается.
+
+---
+
 # DSH for WSL
 
 在同一个 Windows DSH 窗口里使用 Windows 和原生 Linux 对话。WSL 对话带有标志，点击对话即可切换环境，保留各自的草稿和任务。包名为 `dsh-wsl-native`，当前版本为 **0.7.0**，适配 **DeepSeek Harness 0.2.0-rc.2**，支持 Windows Desktop 和 Windows Web。
