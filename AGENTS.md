@@ -1,3 +1,14 @@
+> **This line is closed — owner decision, 2026-11-12.**
+>
+> The active project is [**triagmas/dsh-wsl**](https://github.com/triagmas/dsh-wsl): a Windows Electron
+> shell that shows the unmodified DeepSeek Harness WebUI served by the native `dsh web` inside the
+> existing WSL2. Work on the plugin in this repository is **not** to be resumed: PR #1 was closed
+> without merge and the WSL-first official-Desktop routing direction was rejected by the owner.
+>
+> The instructions below describe the retired plugin line and are kept **for history only**. They are
+> not a current task list. Repository settings, archival state or the working Desktop must not be
+> changed without explicit owner approval.
+
 # Instructions for Pi and other AI agents
 
 ## Mandatory: read project context before proposing work
